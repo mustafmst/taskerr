@@ -11,20 +11,31 @@ import (
 )
 
 type MainWindowModel struct {
-	width  int
-	height int
-	t      []tasks.Task
-	s      *data.Service
+	width         int
+	height        int
+	t             []tasks.Task
+	s             *data.Service
+	activeTask    int
+	hideCompleted bool
 }
 
 func NewMainWindowModel(s *data.Service) MainWindowModel {
-	return MainWindowModel{s: s}
+	return MainWindowModel{s: s, activeTask: -1, hideCompleted: true}
 }
 
 func (m MainWindowModel) LoadTasks() tea.Msg {
 	taskslist, err := m.s.TasksRepo.GetAll()
 	if err != nil {
 		log.Fatalf("Error retrieving tasks: %v", err)
+	}
+	if m.hideCompleted {
+		filtered := make([]tasks.Task, 0)
+		for _, t := range taskslist {
+			if !t.State {
+				filtered = append(filtered, t)
+			}
+		}
+		taskslist = filtered
 	}
 	return tasksLoadedMsg{t: taskslist}
 }
@@ -40,8 +51,14 @@ func (m MainWindowModel) View() string {
 		Width(m.width).Height(m.height)
 
 	body := "Welcome to taskerr tui mode. Press ctrl+c to exit.\n\n\n"
-	for _, task := range m.t {
-		body += fmt.Sprintf("- [%v] %s\n", task.State, task.Description)
+
+	body += fmt.Sprintf("Current task: %d\nYou have %d tasks:\n\n", m.activeTask, len(m.t))
+	for i, task := range m.t {
+		active := false
+		if i == m.activeTask {
+			active = true
+		}
+		body += NewTaskModel(task, m.width, active).View() + "\n"
 	}
 
 	return style.Render(body)
@@ -55,14 +72,44 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tasksLoadedMsg:
 		m.t = msg.t
+		if m.activeTask == -1 && len(m.t) > 0 {
+			m.activeTask = 0
+		}
 		return m, nil
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
 		return m, nil
 	case tea.KeyMsg:
-		if msg.String() == "ctrl+c" {
+		if msg.String() == "ctrl+c" || msg.String() == "q" {
 			return m, tea.Quit
+		}
+		if msg.String() == "j" || msg.String() == "down" {
+			m.activeTask++
+			if m.activeTask >= len(m.t) {
+				m.activeTask = len(m.t) - 1
+			}
+			return m, nil
+		}
+		if msg.String() == "k" || msg.String() == "up" {
+			m.activeTask--
+			if m.activeTask < 0 {
+				m.activeTask = 0
+			}
+			return m, nil
+		}
+		if msg.String() == "enter" || msg.String() == "return" {
+			if m.activeTask < 0 || m.activeTask >= len(m.t) {
+				return m, nil
+			}
+			t := m.t[m.activeTask]
+			t.ToggleState()
+			m.s.TasksRepo.Update(&t)
+			return m, m.LoadTasks
+		}
+		if msg.String() == "h" {
+			m.hideCompleted = !m.hideCompleted
+			return m, m.LoadTasks
 		}
 	}
 	return m, nil
