@@ -1,0 +1,73 @@
+// internal configuration made using koanf
+package config
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/knadh/koanf"
+	kyaml "github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env"
+	"github.com/knadh/koanf/providers/file"
+	"gopkg.in/yaml.v3"
+)
+
+type Config struct {
+	DBProvider   string `yaml:"db_provider"`
+	DBConnection string `yaml:"db_connection"`
+}
+
+var defaultConfig = Config{
+	DBProvider:   "sqlite",
+	DBConnection: filepath.Join(os.Getenv("HOME"), ".taskerr.db"),
+}
+
+func LoadConfig() (*Config, error) {
+	k := koanf.New(".")
+	configFilePath := filepath.Join(os.Getenv("HOME"), ".taskerr")
+
+	// Load from file if it exists
+	if _, err := os.Stat(configFilePath); err == nil {
+		if err := k.Load(file.Provider(configFilePath), kyaml.Parser()); err != nil {
+			return nil, fmt.Errorf("error loading config file: %w", err)
+		}
+	} else if os.IsNotExist(err) {
+		// Write default config if file doesn't exist
+		if err := writeDefaultConfig(configFilePath); err != nil {
+			return nil, fmt.Errorf("error writing default config: %w", err)
+		}
+		if err := k.Load(file.Provider(configFilePath), kyaml.Parser()); err != nil {
+			return nil, fmt.Errorf("error loading default config file: %w", err)
+		}
+	} else {
+		return nil, fmt.Errorf("error checking config file: %w", err)
+	}
+
+	// Override with environment variables
+	if err := k.Load(env.Provider("TASKERR_", ".", func(s string) string {
+		return s
+	}), nil); err != nil {
+		return nil, fmt.Errorf("error loading environment variables: %w", err)
+	}
+
+	// Unmarshal into Config struct
+	var cfg Config
+	if err := k.Unmarshal("", &cfg); err != nil {
+		return nil, fmt.Errorf("error unmarshaling config: %w", err)
+	}
+
+	return &cfg, nil
+}
+
+func writeDefaultConfig(path string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := yaml.NewEncoder(file)
+	encoder.SetIndent(2)
+	return encoder.Encode(defaultConfig)
+}
