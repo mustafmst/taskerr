@@ -5,15 +5,16 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-type Model struct{}
+type Model struct {
+	width  int
+	height int
+}
 
 // View implements tea.Model.
 func (m Model) View() string {
 	style := lipgloss.NewStyle().
 		Align(lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		Width(80).Height(20)
+		Width(m.width).Height(m.height)
 	return style.Render("Welcome to taskerr tui mode. Press ctrl+c to exit.\n")
 }
 
@@ -23,6 +24,9 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
