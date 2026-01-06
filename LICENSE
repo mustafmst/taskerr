@@ -1,58 +1,6 @@
-```bash
-./build/taskerr <command> [arguments]
-```
-
-Example:
-
-```bash
-./build/taskerr add "Buy groceries"
-./build/taskerr ls
-```
-
-- **TUI Mode**:
-  Simply run the application without arguments:
-  ```bash
-  ./build/taskerr
-  ```
-
-### Clean Build Artifacts
-
-To clean up build artifacts:
-
-```bash
-make clean
-```
-
-### Rebuild the Application
-
-To rebuild the application:
-
-```bash
-make rebuild
-```
-
-## Configuration
-
-The application reads configuration from:
-
-1. A YAML file located at `~/.taskerr`.
-2. Environment variables prefixed with `TASKERR_`.
-
-Example environment variable:
-
-```bash
-export TASKERR_DB_PROVIDER=sqlite
-export TASKERR_DB_CONNECTION=/path/to/database.db
-```
-
-## License
-
-This project is licensed under the MIT License.
-
-```
 The MIT License (MIT)
 
-Copyright © 2026
+Copyright © 2026 
 
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -72,4 +20,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-```
