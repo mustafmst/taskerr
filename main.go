@@ -31,7 +31,7 @@ func main() {
 		}
 	} else {
 		// tui app startup
-		p := tea.NewProgram(tui.Model{})
+		p := tea.NewProgram(tui.NewMainWindowModel(dataService))
 		if _, err := p.Run(); err != nil {
 			log.Fatalf("Error starting TUI: %v", err)
 		}
