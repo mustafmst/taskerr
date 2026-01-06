@@ -29,6 +29,10 @@ func NewService(cfg *config.Config) (*Service, error) {
 	return &Service{DB: db, TasksRepo: tasksRepo}, nil
 }
 
+func (s *Service) Close() error {
+	return nil // GORM doesn't require closing the DB connection explicitly
+}
+
 // initDB initializes a GORM DB object based on the provided configuration.
 func initDB(cfg *config.Config) (*gorm.DB, error) {
 	var dialector gorm.Dialector

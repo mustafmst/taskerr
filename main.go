@@ -22,6 +22,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error initializing data service: %v", err)
 	}
+	defer dataService.Close()
 
 	if len(os.Args) > 1 {
 		// cli app startup

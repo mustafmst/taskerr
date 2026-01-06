@@ -26,5 +26,13 @@ clean:
 
 rebuild: clean build
 
+# Install the application locally
+install: build
+	@echo "Installing $(APP_NAME) to ~/.local/bin..."
+	@mkdir -p ~/.local/bin
+	@rm -f ~/.local/bin/$(APP_NAME)
+	@cp $(BUILD_DIR)/$(APP_NAME) ~/.local/bin/
+	@echo "Install complete: ~/.local/bin/$(APP_NAME)"
+
 .PHONY: all build run clean rebuild
 
