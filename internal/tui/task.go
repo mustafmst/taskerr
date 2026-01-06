@@ -16,12 +16,12 @@ func NewTaskModel(t tasks.Task, w int, active bool) TaskModel {
 }
 
 func (t TaskModel) View() string {
-	color := "15"
+	color := "#b3bfbc"
 	if t.t.State {
-		color = "2"
+		color = "#16af0e"
 	}
 	if t.active {
-		color = "3"
+		color = "#e0c021"
 	}
 	style := lipgloss.NewStyle().
 		// Padding(1).

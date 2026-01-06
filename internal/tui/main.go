@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -50,9 +49,10 @@ func (m MainWindowModel) View() string {
 		Align(lipgloss.Center).
 		Width(m.width).Height(m.height)
 
-	body := "Welcome to taskerr tui mode. Press ctrl+c to exit.\n\n\n"
+	body := "Welcome to taskerr tui mode. Press ctrl+c or q to exit.\n"
+	body += "Press h to toggle hide completed tasks.\n"
+	body += "Press j/k or down/up to navigate, enter to toggle task state.\n\n"
 
-	body += fmt.Sprintf("Current task: %d\nYou have %d tasks:\n\n", m.activeTask, len(m.t))
 	for i, task := range m.t {
 		active := false
 		if i == m.activeTask {
@@ -68,6 +68,14 @@ func (m MainWindowModel) Init() tea.Cmd {
 	return m.LoadTasks
 }
 
+func fixactivetask(m *MainWindowModel) {
+	if m.activeTask >= len(m.t) {
+		m.activeTask = len(m.t) - 1
+	} else if m.activeTask < 0 {
+		m.activeTask = 0
+	}
+}
+
 func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tasksLoadedMsg:
@@ -75,6 +83,7 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.activeTask == -1 && len(m.t) > 0 {
 			m.activeTask = 0
 		}
+		fixactivetask(&m)
 		return m, nil
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -86,16 +95,12 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.String() == "j" || msg.String() == "down" {
 			m.activeTask++
-			if m.activeTask >= len(m.t) {
-				m.activeTask = len(m.t) - 1
-			}
+			fixactivetask(&m)
 			return m, nil
 		}
 		if msg.String() == "k" || msg.String() == "up" {
 			m.activeTask--
-			if m.activeTask < 0 {
-				m.activeTask = 0
-			}
+			fixactivetask(&m)
 			return m, nil
 		}
 		if msg.String() == "enter" || msg.String() == "return" {
