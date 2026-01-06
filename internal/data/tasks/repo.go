@@ -8,6 +8,7 @@ type TasksRepository struct {
 
 // NewTasksRepository creates a new instance of TasksRepository
 func NewTasksRepository(db *gorm.DB) *TasksRepository {
+	db.AutoMigrate(&Task{})
 	return &TasksRepository{db: db}
 }
 

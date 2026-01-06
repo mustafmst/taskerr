@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/knadh/koanf"
 	kyaml "github.com/knadh/koanf/parsers/yaml"
@@ -46,14 +47,15 @@ func LoadConfig() (*Config, error) {
 
 	// Override with environment variables
 	if err := k.Load(env.Provider("TASKERR_", ".", func(s string) string {
-		return s
+		// Convert TASKERR_DB_PROVIDER -> db_provider
+		return strings.ToLower(strings.ReplaceAll(s, "_", "."))
 	}), nil); err != nil {
 		return nil, fmt.Errorf("error loading environment variables: %w", err)
 	}
 
 	// Unmarshal into Config struct
 	var cfg Config
-	if err := k.Unmarshal("", &cfg); err != nil {
+	if err := k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "yaml"}); err != nil {
 		return nil, fmt.Errorf("error unmarshaling config: %w", err)
 	}
 
