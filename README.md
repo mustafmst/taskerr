@@ -1,13 +1,67 @@
-```bash
-./build/taskerr <command> [arguments]
-```
+# Taskerr
 
-Example:
+Taskerr is a task management application written in Go. It provides both a Command Line Interface (CLI) and a Text User Interface (TUI) for managing tasks. Users can create, read, update, and delete tasks, with support for configuration through a config file.
 
-```bash
-./build/taskerr add "Buy groceries"
-./build/taskerr ls
-```
+## Features
+
+- **CLI**: Manage tasks directly from the command line.
+- **TUI**: A simple text-based interface for managing tasks interactively.
+- **Task Management**: Create, read, update, and delete tasks.
+- **Configurable**: Supports configuration through a YAML file and environment variables.
+- **Database Support**: Works with SQLite, MySQL, and PostgreSQL.
+
+## Project Structure
+
+- `internal/config`: Handles application configuration.
+- `internal/data`: Manages database connections and task data.
+- `internal/cli`: Implements the CLI interface.
+- `internal/tui`: Implements the TUI interface.
+- `main.go`: Entry point for the application.
+
+## Dependencies
+
+- Go 1.25.1 or higher
+- [Cobra](https://github.com/spf13/cobra) for CLI.
+- [Bubbletea](https://github.com/charmbracelet/bubbletea) and [Lipgloss](https://github.com/charmbracelet/lipgloss) for TUI.
+- [Koanf](https://github.com/knadh/koanf) for configuration management.
+- [GORM](https://gorm.io/) for database handling.
+
+## Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/mustafmst/taskerr.git
+   cd taskerr
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   go mod tidy
+   ```
+
+3. Build the application:
+   ```bash
+   make build
+   ```
+
+## Usage
+
+### Run the Application
+
+- **CLI Mode**:
+
+  ```bash
+  ./build/taskerr <command> [arguments]
+  ```
+
+  Example:
+
+  ```bash
+  ./build/taskerr add "Buy groceries"
+  ./build/taskerr ls
+  ```
 
 - **TUI Mode**:
   Simply run the application without arguments:
@@ -46,30 +100,3 @@ export TASKERR_DB_CONNECTION=/path/to/database.db
 ```
 
 ## License
-
-This project is licensed under the MIT License.
-
-```
-The MIT License (MIT)
-
-Copyright © 2026
-
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the “Software”), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
