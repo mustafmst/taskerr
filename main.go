@@ -26,7 +26,7 @@ func main() {
 
 	if len(os.Args) > 1 {
 		// cli app startup
-		rootCmd := cli.SetupCliApp(dataService)
+		rootCmd := cli.SetupCLIApp(dataService)
 		if err := rootCmd.Execute(); err != nil {
 			log.Fatalf("Error executing CLI: %v", err)
 		}

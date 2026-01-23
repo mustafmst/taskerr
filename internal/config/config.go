@@ -1,4 +1,4 @@
-// internal configuration made using koanf
+// Package config provides configuration loading via koanf.
 package config
 
 import (

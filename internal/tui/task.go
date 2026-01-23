@@ -6,28 +6,28 @@ import (
 )
 
 type TaskModel struct {
-	t      tasks.Task
-	w      int
+	task   tasks.Task
+	width  int
 	active bool
 }
 
-func NewTaskModel(t tasks.Task, w int, active bool) TaskModel {
-	return TaskModel{t: t, w: w, active: active}
+func NewTaskModel(task tasks.Task, width int, active bool) TaskModel {
+	return TaskModel{task: task, width: width, active: active}
 }
 
-func (t TaskModel) View() string {
+func (model TaskModel) View() string {
 	color := "#b3bfbc"
-	if t.t.State {
+	if model.task.State {
 		color = "#16af0e"
 	}
-	if t.active {
+	if model.active {
 		color = "#e0c021"
 	}
 	style := lipgloss.NewStyle().
 		// Padding(1).
-		Width(t.w - 4).
+		Width(model.width - 4).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color(color))
 
-	return style.Render(t.t.Description)
+	return style.Render(model.task.Description)
 }

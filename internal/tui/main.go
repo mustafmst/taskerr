@@ -12,35 +12,35 @@ import (
 type MainWindowModel struct {
 	width         int
 	height        int
-	t             []tasks.Task
-	s             *data.Service
+	tasks         []tasks.Task
+	service       *data.Service
 	activeTask    int
 	hideCompleted bool
 }
 
-func NewMainWindowModel(s *data.Service) MainWindowModel {
-	return MainWindowModel{s: s, activeTask: -1, hideCompleted: true}
+func NewMainWindowModel(service *data.Service) MainWindowModel {
+	return MainWindowModel{service: service, activeTask: -1, hideCompleted: true}
 }
 
 func (m MainWindowModel) LoadTasks() tea.Msg {
-	taskslist, err := m.s.TasksRepo.GetAll()
+	tasksList, err := m.service.TasksRepo.GetAll()
 	if err != nil {
 		log.Fatalf("Error retrieving tasks: %v", err)
 	}
 	if m.hideCompleted {
 		filtered := make([]tasks.Task, 0)
-		for _, t := range taskslist {
-			if !t.State {
-				filtered = append(filtered, t)
+		for _, task := range tasksList {
+			if !task.State {
+				filtered = append(filtered, task)
 			}
 		}
-		taskslist = filtered
+		tasksList = filtered
 	}
-	return tasksLoadedMsg{t: taskslist}
+	return tasksLoadedMsg{tasks: tasksList}
 }
 
 type tasksLoadedMsg struct {
-	t []tasks.Task
+	tasks []tasks.Task
 }
 
 // View implements tea.Model.
@@ -53,7 +53,7 @@ func (m MainWindowModel) View() string {
 	body += "Press h to toggle hide completed tasks.\n"
 	body += "Press j/k or down/up to navigate, enter to toggle task state.\n\n"
 
-	for i, task := range m.t {
+	for i, task := range m.tasks {
 		active := false
 		if i == m.activeTask {
 			active = true
@@ -68,9 +68,9 @@ func (m MainWindowModel) Init() tea.Cmd {
 	return m.LoadTasks
 }
 
-func fixactivetask(m *MainWindowModel) {
-	if m.activeTask >= len(m.t) {
-		m.activeTask = len(m.t) - 1
+func fixActiveTask(m *MainWindowModel) {
+	if m.activeTask >= len(m.tasks) {
+		m.activeTask = len(m.tasks) - 1
 	} else if m.activeTask < 0 {
 		m.activeTask = 0
 	}
@@ -79,12 +79,13 @@ func fixactivetask(m *MainWindowModel) {
 func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tasksLoadedMsg:
-		m.t = msg.t
-		if m.activeTask == -1 && len(m.t) > 0 {
+		m.tasks = msg.tasks
+		if m.activeTask == -1 && len(m.tasks) > 0 {
 			m.activeTask = 0
 		}
-		fixactivetask(&m)
+		fixActiveTask(&m)
 		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -95,21 +96,21 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.String() == "j" || msg.String() == "down" {
 			m.activeTask++
-			fixactivetask(&m)
+			fixActiveTask(&m)
 			return m, nil
 		}
 		if msg.String() == "k" || msg.String() == "up" {
 			m.activeTask--
-			fixactivetask(&m)
+			fixActiveTask(&m)
 			return m, nil
 		}
 		if msg.String() == "enter" || msg.String() == "return" {
-			if m.activeTask < 0 || m.activeTask >= len(m.t) {
+			if m.activeTask < 0 || m.activeTask >= len(m.tasks) {
 				return m, nil
 			}
-			t := m.t[m.activeTask]
-			t.ToggleState()
-			m.s.TasksRepo.Update(&t)
+			task := m.tasks[m.activeTask]
+			task.ToggleState()
+			m.service.TasksRepo.Update(&task)
 			return m, m.LoadTasks
 		}
 		if msg.String() == "h" {

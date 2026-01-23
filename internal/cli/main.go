@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func SetupCliApp(dataService *data.Service) *cobra.Command {
+func SetupCLIApp(dataService *data.Service) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "taskerr",
 		Short: "Taskerr CLI Application",
