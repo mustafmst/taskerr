@@ -41,11 +41,18 @@ func (model TaskModel) View() string {
 
 	// Build content: description on first line, tags on second line (right-aligned)
 	content := model.task.Description
+
+	tagsLineStyle := lipgloss.NewStyle().
+		Width(contentWidth - 2). // Account for border padding
+		Align(lipgloss.Right)
+
 	if tagStr != "" {
-		tagsLineStyle := lipgloss.NewStyle().
-			Width(contentWidth - 2). // Account for border padding
-			Align(lipgloss.Right)
 		content += "\n" + tagsLineStyle.Render(tagStr)
+	} else {
+		noTagsText := lipgloss.NewStyle().
+			Foreground(DimTextColor).
+			Render("[no tags]")
+		content += "\n" + tagsLineStyle.Render(noTagsText)
 	}
 
 	style := lipgloss.NewStyle().
