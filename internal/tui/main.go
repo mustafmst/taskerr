@@ -30,6 +30,7 @@ type MainWindowModel struct {
 	tagsPanel    TagsPanelModel
 	tasksPanel   TasksPanelModel
 	addTaskModal AddTaskModalModel
+	confirmModal ConfirmModalModel
 }
 
 // NewMainWindowModel creates a new MainWindowModel
@@ -45,6 +46,7 @@ func NewMainWindowModel(service *data.Service) MainWindowModel {
 		tagsPanel:     tagsPanel,
 		tasksPanel:    tasksPanel,
 		addTaskModal:  NewAddTaskModalModel(),
+		confirmModal:  NewConfirmModalModel(),
 	}
 }
 
@@ -149,6 +151,17 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Modal was cancelled, nothing to do
 		return m, nil
 
+	case DeleteConfirmedMsg:
+		// Handle deletion based on item type
+		if msg.ItemType == "task" {
+			m.service.TasksRepo.Delete(msg.ItemID)
+			return m, m.loadTasks
+		} else if msg.ItemType == "tag" {
+			m.service.TagsRepo.Delete(msg.ItemID)
+			return m, tea.Batch(m.loadTasks, m.loadTags)
+		}
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -156,7 +169,17 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
-		// If modal is visible, delegate to modal
+		// If confirm modal is visible, delegate to it
+		if m.confirmModal.IsVisible() {
+			var cmd tea.Cmd
+			m.confirmModal, cmd = m.confirmModal.Update(msg)
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			return m, tea.Batch(cmds...)
+		}
+
+		// If add task modal is visible, delegate to modal
 		if m.addTaskModal.IsVisible() {
 			var cmd tea.Cmd
 			m.addTaskModal, cmd = m.addTaskModal.Update(msg)
@@ -180,6 +203,33 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.addTaskModal.SetTags(m.tagsPanel.Tags())
 			m.addTaskModal.SetSize(m.width, m.height)
 			m.addTaskModal.SetVisible(true)
+			return m, nil
+		case "d":
+			// Delete selected item
+			m.confirmModal.SetSize(m.width, m.height)
+			if m.activePanel == TasksPanelFocus {
+				if task := m.tasksPanel.ActiveTask(); task != nil {
+					m.confirmModal.Show(
+						"task",
+						task.ID,
+						"Delete Task?",
+						FormatTaskMessage(task.Description),
+						"",
+					)
+				}
+			} else {
+				if tag := m.tagsPanel.ActiveTag(); tag != nil {
+					// Count tasks using this tag
+					taskCount, _ := m.service.TagsRepo.CountTasksWithTag(tag.ID)
+					m.confirmModal.Show(
+						"tag",
+						tag.ID,
+						"Delete Tag?",
+						FormatTagMessage(tag.Name),
+						FormatTagWarning(taskCount),
+					)
+				}
+			}
 			return m, nil
 		default:
 			// Delegate to active panel
@@ -221,7 +271,9 @@ func (m MainWindowModel) View() string {
 	view := lipgloss.JoinVertical(lipgloss.Left, content, footer)
 
 	// Overlay modal if visible
-	if m.addTaskModal.IsVisible() {
+	if m.confirmModal.IsVisible() {
+		view = m.confirmModal.View()
+	} else if m.addTaskModal.IsVisible() {
 		modalView := m.addTaskModal.View()
 		// Place modal over the view using lipgloss.Place
 		view = lipgloss.Place(
@@ -273,7 +325,7 @@ func (m MainWindowModel) renderFooter() string {
 		hiddenStatus = "hidden"
 	}
 
-	footer := fmt.Sprintf(" n: new task | TAB: switch | SPACE: toggle | m: filter (%s) | h: completed %s | q: quit",
+	footer := fmt.Sprintf(" n: new | d: delete | TAB: switch | SPACE: toggle | m: filter (%s) | h: completed %s | q: quit",
 		m.tagsPanel.GetFilterMode().String(), hiddenStatus)
 
 	return footerStyle.Render(footer)

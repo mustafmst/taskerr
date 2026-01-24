@@ -76,6 +76,15 @@ func (m TagsPanelModel) Tags() []tasks.Tag {
 	return m.tags
 }
 
+// ActiveTag returns the currently active tag, or nil if none
+func (m TagsPanelModel) ActiveTag() *tasks.Tag {
+	if m.activeTag >= 0 && m.activeTag < len(m.tags) {
+		tag := m.tags[m.activeTag]
+		return &tag
+	}
+	return nil
+}
+
 // IsFocused returns whether the panel is focused
 func (m TagsPanelModel) IsFocused() bool {
 	return m.focused

@@ -65,3 +65,9 @@ type TaskCreatedMsg struct {
 
 // ModalClosedMsg is sent when the modal is closed without saving
 type ModalClosedMsg struct{}
+
+// DeleteConfirmedMsg is sent when user confirms deletion
+type DeleteConfirmedMsg struct {
+	ItemType string // "task" or "tag"
+	ItemID   uint
+}

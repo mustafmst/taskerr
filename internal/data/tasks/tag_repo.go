@@ -109,3 +109,10 @@ func (r *TagsRepository) GetTaskTags(taskID uint) ([]Tag, error) {
 		Find(&tags).Error
 	return tags, err
 }
+
+// CountTasksWithTag returns the number of tasks that have this tag
+func (r *TagsRepository) CountTasksWithTag(tagID uint) (int64, error) {
+	var count int64
+	err := r.db.Table("task_tags").Where("tag_id = ?", tagID).Count(&count).Error
+	return count, err
+}
