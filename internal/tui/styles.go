@@ -4,11 +4,12 @@ import "github.com/charmbracelet/lipgloss"
 
 // Layout constants
 const (
-	HeaderHeight = 2
-	FooterHeight = 1
-	TaskHeight   = 4
-	TagHeight    = 1
-	PanelPadding = 2
+	HeaderBarHeight = 1
+	HeaderHeight    = 2 // Panel header height (title + blank line)
+	FooterHeight    = 1
+	TaskHeight      = 4
+	TagHeight       = 1
+	PanelPadding    = 2
 )
 
 // Colors
@@ -19,6 +20,8 @@ var (
 	DimTextColor        = lipgloss.Color("#888888")
 	WhiteColor          = lipgloss.Color("#ffffff")
 	HighlightBgColor    = lipgloss.Color("#444444")
+	HeaderBarBgColor    = lipgloss.Color("#e0c021")
+	HeaderBarFgColor    = lipgloss.Color("#000000")
 )
 
 // FilterMode represents how multiple selected tags filter tasks

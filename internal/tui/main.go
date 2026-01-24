@@ -258,6 +258,9 @@ func (m MainWindowModel) View() string {
 		return "Loading..."
 	}
 
+	// Render header
+	header := m.renderHeader()
+
 	// Render panels
 	tagsView := m.tagsPanel.View()
 	tasksView := m.tasksPanel.View()
@@ -268,7 +271,7 @@ func (m MainWindowModel) View() string {
 	// Footer
 	footer := m.renderFooter()
 
-	view := lipgloss.JoinVertical(lipgloss.Left, content, footer)
+	view := lipgloss.JoinVertical(lipgloss.Left, header, content, footer)
 
 	// Overlay modal if visible
 	if m.confirmModal.IsVisible() {
@@ -308,10 +311,21 @@ func (m *MainWindowModel) updatePanelSizes() {
 		tagsWidth = 15
 	}
 	tasksWidth := m.width - tagsWidth
-	contentHeight := m.height - FooterHeight
+	contentHeight := m.height - FooterHeight - HeaderBarHeight
 
 	m.tagsPanel.SetSize(tagsWidth, contentHeight)
 	m.tasksPanel.SetSize(tasksWidth, contentHeight)
+}
+
+// renderHeader renders the app title bar
+func (m MainWindowModel) renderHeader() string {
+	style := lipgloss.NewStyle().
+		Width(m.width).
+		Align(lipgloss.Center).
+		Bold(true).
+		Foreground(HeaderBarFgColor).
+		Background(HeaderBarBgColor)
+	return style.Render("Taskerr")
 }
 
 // renderFooter renders the help footer
@@ -320,12 +334,12 @@ func (m MainWindowModel) renderFooter() string {
 		Foreground(DimTextColor).
 		Width(m.width)
 
-	hiddenStatus := "shown"
+	hiddenStatus := "hide"
 	if m.hideCompleted {
-		hiddenStatus = "hidden"
+		hiddenStatus = "show"
 	}
 
-	footer := fmt.Sprintf(" n: new | d: delete | TAB: switch | SPACE: toggle | m: filter (%s) | h: completed %s | q: quit",
+	footer := fmt.Sprintf(" [Navigate] TAB j/k │ [Edit] n:new d:del SPACE:toggle │ [View] m:filter(%s) h:%s │ q:quit",
 		m.tagsPanel.GetFilterMode().String(), hiddenStatus)
 
 	return footerStyle.Render(footer)

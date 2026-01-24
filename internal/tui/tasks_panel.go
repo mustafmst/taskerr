@@ -102,19 +102,8 @@ func (m TasksPanelModel) View() string {
 	// Header
 	header := HeaderStyle.Render("Tasks")
 
-	// Calculate visible tasks
-	availableHeight := m.height - HeaderHeight - PanelPadding
-	visibleTasks := availableHeight / TaskHeight
-	if visibleTasks < 1 {
-		visibleTasks = 1
-	}
-
-	// Determine range of tasks to display
-	startIdx := m.scrollOffset
-	endIdx := startIdx + visibleTasks
-	if endIdx > len(m.tasks) {
-		endIdx = len(m.tasks)
-	}
+	// Calculate visible range using dynamic heights
+	startIdx, endIdx := m.calculateVisibleRange()
 
 	// Build content
 	var lines []string
@@ -135,7 +124,7 @@ func (m TasksPanelModel) View() string {
 	}
 
 	// Scroll indicator
-	if len(m.tasks) > visibleTasks {
+	if endIdx < len(m.tasks) || startIdx > 0 {
 		scrollInfo := DimStyle.Render(fmt.Sprintf("[%d-%d of %d tasks]", startIdx+1, endIdx, len(m.tasks)))
 		lines = append(lines, scrollInfo)
 	}
@@ -157,31 +146,74 @@ func (m *TasksPanelModel) fixActiveTask() {
 	}
 }
 
+// calculateVisibleRange determines which tasks fit in the viewport based on their actual heights
+func (m TasksPanelModel) calculateVisibleRange() (startIdx, endIdx int) {
+	if len(m.tasks) == 0 {
+		return 0, 0
+	}
+
+	// Available height for task cards
+	// Subtract: panel header (2), padding (2), scroll indicator (1)
+	availableHeight := m.height - HeaderHeight - PanelPadding - 1
+	taskCardWidth := m.width - 6
+
+	startIdx = m.scrollOffset
+	if startIdx < 0 {
+		startIdx = 0
+	}
+	if startIdx >= len(m.tasks) {
+		startIdx = len(m.tasks) - 1
+	}
+
+	endIdx = startIdx
+	usedHeight := 0
+
+	for i := startIdx; i < len(m.tasks); i++ {
+		taskHeight := NewTaskModel(m.tasks[i], taskCardWidth, false).Height()
+		if usedHeight+taskHeight > availableHeight && i > startIdx {
+			break // Don't add this task, but ensure at least 1 is shown
+		}
+		usedHeight += taskHeight
+		endIdx = i + 1
+	}
+
+	return startIdx, endIdx
+}
+
 // adjustScroll ensures the active task is visible within the scroll view
 func (m *TasksPanelModel) adjustScroll() {
-	availableHeight := m.height - HeaderHeight - PanelPadding
-	visibleTasks := availableHeight / TaskHeight
-	if visibleTasks < 1 {
-		visibleTasks = 1
+	if len(m.tasks) == 0 {
+		m.scrollOffset = 0
+		return
 	}
 
-	if m.activeTask < m.scrollOffset {
-		m.scrollOffset = m.activeTask
-	}
-
-	if m.activeTask >= m.scrollOffset+visibleTasks {
-		m.scrollOffset = m.activeTask - visibleTasks + 1
-	}
-
+	// Clamp scrollOffset to valid range
 	if m.scrollOffset < 0 {
 		m.scrollOffset = 0
 	}
-
-	maxOffset := len(m.tasks) - visibleTasks
-	if maxOffset < 0 {
-		maxOffset = 0
+	if m.scrollOffset >= len(m.tasks) {
+		m.scrollOffset = len(m.tasks) - 1
 	}
-	if m.scrollOffset > maxOffset {
-		m.scrollOffset = maxOffset
+
+	// Ensure active task is not above viewport
+	if m.activeTask >= 0 && m.activeTask < m.scrollOffset {
+		m.scrollOffset = m.activeTask
+	}
+
+	// Ensure active task is not below viewport
+	for m.scrollOffset < len(m.tasks) && m.activeTask >= 0 {
+		_, endIdx := m.calculateVisibleRange()
+		if m.activeTask < endIdx {
+			break // Active task is visible
+		}
+		m.scrollOffset++
+	}
+
+	// Clamp scrollOffset again after adjustments
+	if m.scrollOffset >= len(m.tasks) {
+		m.scrollOffset = len(m.tasks) - 1
+	}
+	if m.scrollOffset < 0 {
+		m.scrollOffset = 0
 	}
 }
