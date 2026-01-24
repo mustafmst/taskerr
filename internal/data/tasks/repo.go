@@ -1,9 +1,19 @@
 package tasks
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type TasksRepository struct {
 	db *gorm.DB
+}
+
+// DBState represents the current state of the database for change detection
+type DBState struct {
+	Count       int64
+	LastUpdated time.Time
 }
 
 // NewTasksRepository creates a new instance of TasksRepository
@@ -43,4 +53,26 @@ func (r *TasksRepository) Update(task *Task) error {
 // Delete deletes a task by its ID
 func (r *TasksRepository) Delete(id uint) error {
 	return r.db.Delete(&Task{}, id).Error
+}
+
+// GetDBState returns the current database state for change detection
+func (r *TasksRepository) GetDBState() (DBState, error) {
+	var state DBState
+	var count int64
+	var lastUpdated *time.Time
+
+	if err := r.db.Model(&Task{}).Count(&count).Error; err != nil {
+		return state, err
+	}
+
+	if err := r.db.Model(&Task{}).Select("MAX(updated_at)").Scan(&lastUpdated).Error; err != nil {
+		return state, err
+	}
+
+	state.Count = count
+	if lastUpdated != nil {
+		state.LastUpdated = *lastUpdated
+	}
+
+	return state, nil
 }

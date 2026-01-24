@@ -2,6 +2,7 @@ package tui
 
 import (
 	"log"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -16,6 +17,7 @@ type MainWindowModel struct {
 	service       *data.Service
 	activeTask    int
 	hideCompleted bool
+	lastDBState   tasks.DBState
 }
 
 func NewMainWindowModel(service *data.Service) MainWindowModel {
@@ -43,6 +45,26 @@ type tasksLoadedMsg struct {
 	tasks []tasks.Task
 }
 
+type tickMsg time.Time
+
+type dbStateMsg struct {
+	state tasks.DBState
+}
+
+func tickCmd() tea.Cmd {
+	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
+}
+
+func (m MainWindowModel) checkDBState() tea.Msg {
+	state, err := m.service.TasksRepo.GetDBState()
+	if err != nil {
+		return nil
+	}
+	return dbStateMsg{state: state}
+}
+
 // View implements tea.Model.
 func (m MainWindowModel) View() string {
 	style := lipgloss.NewStyle().
@@ -65,7 +87,7 @@ func (m MainWindowModel) View() string {
 }
 
 func (m MainWindowModel) Init() tea.Cmd {
-	return m.LoadTasks
+	return tea.Batch(m.LoadTasks, tickCmd())
 }
 
 func fixActiveTask(m *MainWindowModel) {
@@ -85,6 +107,17 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		fixActiveTask(&m)
 		return m, nil
+
+	case tickMsg:
+		return m, m.checkDBState
+
+	case dbStateMsg:
+		if msg.state.Count != m.lastDBState.Count ||
+			!msg.state.LastUpdated.Equal(m.lastDBState.LastUpdated) {
+			m.lastDBState = msg.state
+			return m, tea.Batch(m.LoadTasks, tickCmd())
+		}
+		return m, tickCmd()
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width

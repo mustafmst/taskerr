@@ -32,7 +32,7 @@ func main() {
 		}
 	} else {
 		// tui app startup
-		p := tea.NewProgram(tui.NewMainWindowModel(dataService))
+		p := tea.NewProgram(tui.NewMainWindowModel(dataService), tea.WithAltScreen())
 		if _, err := p.Run(); err != nil {
 			log.Fatalf("Error starting TUI: %v", err)
 		}
