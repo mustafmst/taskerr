@@ -25,7 +25,7 @@ func NewMainWindowModel(service *data.Service) MainWindowModel {
 }
 
 func (m MainWindowModel) LoadTasks() tea.Msg {
-	tasksList, err := m.service.TasksRepo.GetAll()
+	tasksList, err := m.service.TasksRepo.GetAllWithTags()
 	if err != nil {
 		log.Fatalf("Error retrieving tasks: %v", err)
 	}

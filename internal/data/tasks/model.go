@@ -11,6 +11,7 @@ type Task struct {
 	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 	FinishedAt  *time.Time `json:"finished_at"` // Nullable field
+	Tags        []Tag      `gorm:"many2many:task_tags;" json:"tags,omitempty"`
 }
 
 func (t *Task) TableName() string {

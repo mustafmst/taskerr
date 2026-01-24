@@ -45,6 +45,15 @@ func (r *TasksRepository) GetAll() ([]Task, error) {
 	return tasks, nil
 }
 
+// GetAllWithTags retrieves all tasks with their associated tags preloaded
+func (r *TasksRepository) GetAllWithTags() ([]Task, error) {
+	var tasks []Task
+	if err := r.db.Preload("Tags").Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
 // Update updates an existing task in the database
 func (r *TasksRepository) Update(task *Task) error {
 	return r.db.Save(task).Error
@@ -59,20 +68,19 @@ func (r *TasksRepository) Delete(id uint) error {
 func (r *TasksRepository) GetDBState() (DBState, error) {
 	var state DBState
 	var count int64
-	var lastUpdated *time.Time
 
 	if err := r.db.Model(&Task{}).Count(&count).Error; err != nil {
 		return state, err
 	}
 
-	if err := r.db.Model(&Task{}).Select("MAX(updated_at)").Scan(&lastUpdated).Error; err != nil {
-		return state, err
+	// Get the latest updated task to determine last update time
+	var latestTask Task
+	err := r.db.Order("updated_at DESC").First(&latestTask).Error
+	if err == nil {
+		state.LastUpdated = latestTask.UpdatedAt
 	}
+	// If no tasks found, LastUpdated remains zero value
 
 	state.Count = count
-	if lastUpdated != nil {
-		state.LastUpdated = *lastUpdated
-	}
-
 	return state, nil
 }
