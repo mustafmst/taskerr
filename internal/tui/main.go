@@ -26,9 +26,10 @@ type MainWindowModel struct {
 	hideCompleted bool
 	lastDBState   tasks.DBState
 
-	activePanel Panel
-	tagsPanel   TagsPanelModel
-	tasksPanel  TasksPanelModel
+	activePanel  Panel
+	tagsPanel    TagsPanelModel
+	tasksPanel   TasksPanelModel
+	addTaskModal AddTaskModalModel
 }
 
 // NewMainWindowModel creates a new MainWindowModel
@@ -43,6 +44,7 @@ func NewMainWindowModel(service *data.Service) MainWindowModel {
 		activePanel:   TasksPanelFocus,
 		tagsPanel:     tagsPanel,
 		tasksPanel:    tasksPanel,
+		addTaskModal:  NewAddTaskModalModel(),
 	}
 }
 
@@ -123,6 +125,30 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.service.TasksRepo.Update(&msg.Task)
 		return m, m.loadTasks
 
+	case TaskCreatedMsg:
+		// Create new task
+		task := tasks.Task{Description: msg.Description}
+		m.service.TasksRepo.Create(&task)
+
+		// Attach existing tags
+		for _, tagID := range msg.TagIDs {
+			m.service.TagsRepo.AttachToTask(tagID, task.ID)
+		}
+
+		// Create and attach new tags
+		for _, tagName := range msg.NewTagNames {
+			tag, err := m.service.TagsRepo.GetOrCreate(tagName)
+			if err == nil {
+				m.service.TagsRepo.AttachToTask(tag.ID, task.ID)
+			}
+		}
+
+		return m, tea.Batch(m.loadTasks, m.loadTags)
+
+	case ModalClosedMsg:
+		// Modal was cancelled, nothing to do
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -130,6 +156,16 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		// If modal is visible, delegate to modal
+		if m.addTaskModal.IsVisible() {
+			var cmd tea.Cmd
+			m.addTaskModal, cmd = m.addTaskModal.Update(msg)
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			return m, tea.Batch(cmds...)
+		}
+
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -139,6 +175,12 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "h":
 			m.hideCompleted = !m.hideCompleted
 			return m, m.loadTasks
+		case "n":
+			// Open add task modal
+			m.addTaskModal.SetTags(m.tagsPanel.Tags())
+			m.addTaskModal.SetSize(m.width, m.height)
+			m.addTaskModal.SetVisible(true)
+			return m, nil
 		default:
 			// Delegate to active panel
 			if m.activePanel == TagsPanelFocus {
@@ -176,7 +218,22 @@ func (m MainWindowModel) View() string {
 	// Footer
 	footer := m.renderFooter()
 
-	return lipgloss.JoinVertical(lipgloss.Left, content, footer)
+	view := lipgloss.JoinVertical(lipgloss.Left, content, footer)
+
+	// Overlay modal if visible
+	if m.addTaskModal.IsVisible() {
+		modalView := m.addTaskModal.View()
+		// Place modal over the view using lipgloss.Place
+		view = lipgloss.Place(
+			m.width, m.height,
+			lipgloss.Center, lipgloss.Center,
+			modalView,
+			lipgloss.WithWhitespaceChars(" "),
+			lipgloss.WithWhitespaceForeground(lipgloss.Color("#000000")),
+		)
+	}
+
+	return view
 }
 
 // switchPanel toggles focus between panels
@@ -216,7 +273,7 @@ func (m MainWindowModel) renderFooter() string {
 		hiddenStatus = "hidden"
 	}
 
-	footer := fmt.Sprintf(" TAB: switch panel | SPACE: toggle | m: filter mode (%s) | h: completed %s | q: quit",
+	footer := fmt.Sprintf(" n: new task | TAB: switch | SPACE: toggle | m: filter (%s) | h: completed %s | q: quit",
 		m.tagsPanel.GetFilterMode().String(), hiddenStatus)
 
 	return footerStyle.Render(footer)

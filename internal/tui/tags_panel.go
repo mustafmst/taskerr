@@ -71,6 +71,11 @@ func (m TagsPanelModel) GetFilterMode() FilterMode {
 	return m.filterMode
 }
 
+// Tags returns the list of tags
+func (m TagsPanelModel) Tags() []tasks.Tag {
+	return m.tags
+}
+
 // IsFocused returns whether the panel is focused
 func (m TagsPanelModel) IsFocused() bool {
 	return m.focused

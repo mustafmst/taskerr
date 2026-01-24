@@ -53,3 +53,15 @@ type TaskToggledMsg struct {
 type FilterModeChangedMsg struct {
 	Mode FilterMode
 }
+
+// Modal messages
+
+// TaskCreatedMsg is sent when a new task is created via the modal
+type TaskCreatedMsg struct {
+	Description string
+	TagIDs      []uint
+	NewTagNames []string
+}
+
+// ModalClosedMsg is sent when the modal is closed without saving
+type ModalClosedMsg struct{}
