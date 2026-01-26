@@ -4,9 +4,7 @@ Taskerr is a task management application written in Go. It provides both a Comma
 
 ## AI disclosure
 
-I was looking for some task managment app with tui but none had things I need and is not too complicated. This is why I created taskerr (name to be changed later).
-Because it is not a passion project and just a tool that I need, I used AI to help me with the implementation. So this project is mostly AI-generated code with some modifications from me.
-Just be aware of it if You use it.
+I wanted a simple TUI-based task management app that met my needs without being overly complicated, but I couldn't find one. That's why I created Taskerr (temporary name). Since this is a utility project rather than a passion project, I relied on AI for most of the implementation, with some modifications from me. Keep this in mind if you decide to use it.
 
 ### Tools and models used
 
