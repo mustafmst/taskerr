@@ -2,6 +2,18 @@
 
 Taskerr is a task management application written in Go. It provides both a Command Line Interface (CLI) and a Text User Interface (TUI) for managing tasks with tag-based organization and filtering.
 
+## AI disclosure
+
+I was looking for some task managment app with tui but none had things I need and is not too complicated. This is why I created taskerr (name to be changed later).
+Because it is not a passion project and just a tool that I need, I used AI to help me with the implementation. So this project is mostly AI-generated code with some modifications from me.
+Just be aware of it if You use it.
+
+### Tools and models used
+
+- [Opencode](https://opencode.ai/)
+- [Github Copilot](https://github.com/features/copilot)
+- [Claude 4.5 Opus Model](https://claude.ai)
+
 ## Features
 
 - **CLI & TUI**: Manage tasks from the command line or an interactive terminal interface
@@ -27,16 +39,18 @@ The TUI provides a two-panel interface with tags on the left and tasks on the ri
 
 ### Keyboard Shortcuts
 
-| Group | Key | Action |
-|-------|-----|--------|
-| **Navigate** | `TAB` | Switch between panels |
-| | `j` / `k` | Move down / up |
-| **Edit** | `n` | Add new task |
-| | `d` | Delete selected item |
-| | `SPACE` | Toggle task completion / tag selection |
-| **View** | `m` | Toggle filter mode (OR/AND) |
-| | `h` | Toggle hide/show completed tasks |
-| **Exit** | `q` | Quit |
+| Group        | Key       | Action                                 |
+| ------------ | --------- | -------------------------------------- |
+| **Navigate** | `TAB`     | Switch between panels                  |
+|              | `j` / `k` | Move down / up                         |
+| **Edit**     | `n`       | Add new task                           |
+|              | `e`       | Edit currently selected task           |
+|              | `d`       | Delete selected item                   |
+|              | `SPACE`   | Toggle task completion / tag selection |
+| **View**     | `m`       | Toggle filter mode (OR/AND)            |
+|              | `h`       | Toggle hide/show completed tasks       |
+|              | `s`       | Display tasks statistics               |
+| **Exit**     | `q`       | Quit                                   |
 
 ## CLI Usage
 
@@ -100,6 +114,7 @@ For manual installation:
    ```
 
 3. Build the application:
+
    ```bash
    make build
    ```
@@ -107,11 +122,13 @@ For manual installation:
 ## Usage
 
 - **TUI Mode** (default):
+
   ```bash
   ./build/taskerr
   ```
 
 - **CLI Mode**:
+
   ```bash
   ./build/taskerr <command> [arguments]
   ```
