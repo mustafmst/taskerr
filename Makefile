@@ -34,5 +34,5 @@ install: build
 	@cp $(BUILD_DIR)/$(APP_NAME) ~/.local/bin/
 	@echo "Install complete: ~/.local/bin/$(APP_NAME)"
 
-.PHONY: all build run clean rebuild
+.PHONY: all build run clean rebuild install
 

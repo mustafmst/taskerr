@@ -72,7 +72,19 @@ taskerr task tag <task_id> <tag_name>
 taskerr task untag <task_id> <tag_name>
 ```
 
+## Quick Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mustafmst/taskerr/main/scripts/install.sh | bash
+```
+
+**Requirements:** git, go (1.25.1+), make
+
+This installs taskerr to `~/.local/bin` and adds it to your PATH.
+
 ## Installation
+
+For manual installation:
 
 1. Clone the repository:
 
