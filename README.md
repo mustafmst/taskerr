@@ -15,6 +15,16 @@ Taskerr is a task management application written in Go. It provides both a Comma
 
 The TUI provides a two-panel interface with tags on the left and tasks on the right.
 
+### Screenshots
+
+![Main View](screenshots/taskerr_main.png)
+
+![Add Task](screenshots/taskerr_add.png)
+
+![Filter by Tags](screenshots/taskerr_filter.png)
+
+![Statistics](screenshots/taskerr_stats.png)
+
 ### Keyboard Shortcuts
 
 | Group | Key | Action |
