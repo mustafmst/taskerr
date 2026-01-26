@@ -340,17 +340,12 @@ func (m AddTaskModalModel) View() string {
 
 	modal := modalStyle.Render(content)
 
-	// Center the modal on screen
-	xOffset := (m.width - modalWidth) / 2
-	yOffset := (m.height - modalHeight) / 2
-
-	// Create positioned modal
-	positioned := lipgloss.NewStyle().
-		MarginTop(yOffset).
-		MarginLeft(xOffset).
-		Render(modal)
-
-	return positioned
+	// Center on screen
+	return lipgloss.Place(
+		m.width, m.height,
+		lipgloss.Center, lipgloss.Center,
+		modal,
+	)
 }
 
 // fieldLabel renders a field label with focus indicator
