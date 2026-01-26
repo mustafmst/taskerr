@@ -31,6 +31,7 @@ type MainWindowModel struct {
 	tasksPanel   TasksPanelModel
 	addTaskModal AddTaskModalModel
 	confirmModal ConfirmModalModel
+	statsModal   StatsModalModel
 }
 
 // NewMainWindowModel creates a new MainWindowModel
@@ -47,6 +48,7 @@ func NewMainWindowModel(service *data.Service) MainWindowModel {
 		tasksPanel:    tasksPanel,
 		addTaskModal:  NewAddTaskModalModel(),
 		confirmModal:  NewConfirmModalModel(),
+		statsModal:    NewStatsModalModel(),
 	}
 }
 
@@ -169,6 +171,16 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		// If stats modal is visible, delegate to it
+		if m.statsModal.IsVisible() {
+			var cmd tea.Cmd
+			m.statsModal, cmd = m.statsModal.Update(msg)
+			if cmd != nil {
+				cmds = append(cmds, cmd)
+			}
+			return m, tea.Batch(cmds...)
+		}
+
 		// If confirm modal is visible, delegate to it
 		if m.confirmModal.IsVisible() {
 			var cmd tea.Cmd
@@ -203,6 +215,12 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.addTaskModal.SetTags(m.tagsPanel.Tags())
 			m.addTaskModal.SetSize(m.width, m.height)
 			m.addTaskModal.SetVisible(true)
+			return m, nil
+		case "s":
+			// Open stats modal - get all tasks (unfiltered)
+			allTasks, _ := m.service.TasksRepo.GetAllWithTags()
+			m.statsModal.Show(allTasks, m.tagsPanel.Tags())
+			m.statsModal.SetSize(m.width, m.height)
 			return m, nil
 		case "d":
 			// Delete selected item
@@ -274,7 +292,9 @@ func (m MainWindowModel) View() string {
 	view := lipgloss.JoinVertical(lipgloss.Left, header, content, footer)
 
 	// Overlay modal if visible
-	if m.confirmModal.IsVisible() {
+	if m.statsModal.IsVisible() {
+		view = m.statsModal.View()
+	} else if m.confirmModal.IsVisible() {
 		view = m.confirmModal.View()
 	} else if m.addTaskModal.IsVisible() {
 		modalView := m.addTaskModal.View()
@@ -339,7 +359,7 @@ func (m MainWindowModel) renderFooter() string {
 		hiddenStatus = "show"
 	}
 
-	footer := fmt.Sprintf(" [Navigate] TAB j/k │ [Edit] n:new d:del SPACE:toggle │ [View] m:filter(%s) h:%s │ q:quit",
+	footer := fmt.Sprintf(" [Navigate] TAB j/k │ [Edit] n:new d:del SPACE:toggle │ [View] m:filter(%s) h:%s s:stats │ q:quit",
 		m.tagsPanel.GetFilterMode().String(), hiddenStatus)
 
 	return footerStyle.Render(footer)
