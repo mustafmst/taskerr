@@ -89,6 +89,10 @@ func (m TextInputModel) Update(msg tea.Msg) (TextInputModel, tea.Cmd) {
 			m.cursorPos = 0
 		case tea.KeyEnd:
 			m.cursorPos = len(m.value)
+		case tea.KeySpace:
+			// Insert space at cursor position
+			m.value = m.value[:m.cursorPos] + " " + m.value[m.cursorPos:]
+			m.cursorPos++
 		case tea.KeyRunes:
 			// Insert character at cursor position
 			char := string(msg.Runes)
