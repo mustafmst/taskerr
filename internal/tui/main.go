@@ -149,6 +149,53 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, tea.Batch(m.loadTasks, m.loadTags)
 
+	case TaskUpdatedMsg:
+		// Update existing task
+		task, err := m.service.TasksRepo.Get(msg.TaskID)
+		if err != nil {
+			return m, nil // Task not found, ignore
+		}
+
+		task.Description = msg.Description
+		m.service.TasksRepo.Update(task)
+
+		// Get current tags for this task
+		currentTags, _ := m.service.TagsRepo.GetTaskTags(msg.TaskID)
+		currentTagIDs := make(map[uint]bool)
+		for _, tag := range currentTags {
+			currentTagIDs[tag.ID] = true
+		}
+
+		// Build map of new tag IDs
+		newTagIDs := make(map[uint]bool)
+		for _, tagID := range msg.TagIDs {
+			newTagIDs[tagID] = true
+		}
+
+		// Detach tags that are no longer selected
+		for _, tag := range currentTags {
+			if !newTagIDs[tag.ID] {
+				m.service.TagsRepo.DetachFromTask(tag.ID, msg.TaskID)
+			}
+		}
+
+		// Attach newly selected tags
+		for _, tagID := range msg.TagIDs {
+			if !currentTagIDs[tagID] {
+				m.service.TagsRepo.AttachToTask(tagID, msg.TaskID)
+			}
+		}
+
+		// Create and attach new tags
+		for _, tagName := range msg.NewTagNames {
+			tag, err := m.service.TagsRepo.GetOrCreate(tagName)
+			if err == nil {
+				m.service.TagsRepo.AttachToTask(tag.ID, msg.TaskID)
+			}
+		}
+
+		return m, tea.Batch(m.loadTasks, m.loadTags)
+
 	case ModalClosedMsg:
 		// Modal was cancelled, nothing to do
 		return m, nil
@@ -215,6 +262,17 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.addTaskModal.SetTags(m.tagsPanel.Tags())
 			m.addTaskModal.SetSize(m.width, m.height)
 			m.addTaskModal.SetVisible(true)
+			return m, nil
+		case "e":
+			// Edit selected task (only when tasks panel is focused)
+			if m.activePanel == TasksPanelFocus {
+				if task := m.tasksPanel.ActiveTask(); task != nil {
+					m.addTaskModal.SetTags(m.tagsPanel.Tags())
+					m.addTaskModal.SetSize(m.width, m.height)
+					m.addTaskModal.SetEditTask(task)
+					m.addTaskModal.SetVisible(true)
+				}
+			}
 			return m, nil
 		case "s":
 			// Open stats modal - get all tasks (unfiltered)
@@ -359,7 +417,7 @@ func (m MainWindowModel) renderFooter() string {
 		hiddenStatus = "show"
 	}
 
-	footer := fmt.Sprintf(" [Navigate] TAB j/k │ [Edit] n:new d:del SPACE:toggle │ [View] m:filter(%s) h:%s s:stats │ q:quit",
+	footer := fmt.Sprintf(" [Navigate] TAB j/k │ [Edit] n:new e:edit d:del SPACE:toggle │ [View] m:filter(%s) h:%s s:stats │ q:quit",
 		m.tagsPanel.GetFilterMode().String(), hiddenStatus)
 
 	return footerStyle.Render(footer)

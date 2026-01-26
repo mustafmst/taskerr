@@ -63,6 +63,14 @@ type TaskCreatedMsg struct {
 	NewTagNames []string
 }
 
+// TaskUpdatedMsg is sent when an existing task is updated via the modal
+type TaskUpdatedMsg struct {
+	TaskID      uint
+	Description string
+	TagIDs      []uint
+	NewTagNames []string
+}
+
 // ModalClosedMsg is sent when the modal is closed without saving
 type ModalClosedMsg struct{}
 
