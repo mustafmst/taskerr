@@ -9,7 +9,9 @@ type Task struct {
 	Description string     `gorm:"not null" json:"description"`
 	State       bool       `gorm:"not null" json:"state"` // true for completed, false for not completed
 	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 	FinishedAt  *time.Time `json:"finished_at"` // Nullable field
+	Tags        []Tag      `gorm:"many2many:task_tags;" json:"tags,omitempty"`
 }
 
 func (t *Task) TableName() string {

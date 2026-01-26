@@ -26,13 +26,13 @@ func main() {
 
 	if len(os.Args) > 1 {
 		// cli app startup
-		rootCmd := cli.SetupCliApp(dataService)
+		rootCmd := cli.SetupCLIApp(dataService)
 		if err := rootCmd.Execute(); err != nil {
 			log.Fatalf("Error executing CLI: %v", err)
 		}
 	} else {
 		// tui app startup
-		p := tea.NewProgram(tui.NewMainWindowModel(dataService))
+		p := tea.NewProgram(tui.NewMainWindowModel(dataService), tea.WithAltScreen())
 		if _, err := p.Run(); err != nil {
 			log.Fatalf("Error starting TUI: %v", err)
 		}

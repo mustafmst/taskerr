@@ -9,12 +9,14 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Service struct {
 	DB *gorm.DB
 	// Add repositories here as needed, e.g., UserRepository, TaskRepository, etc.
 	TasksRepo *tasks.TasksRepository
+	TagsRepo  *tasks.TagsRepository
 }
 
 // NewService initializes the data service using the configuration loaded from config package.
@@ -25,8 +27,9 @@ func NewService(cfg *config.Config) (*Service, error) {
 	}
 
 	tasksRepo := tasks.NewTasksRepository(db)
+	tagsRepo := tasks.NewTagsRepository(db)
 
-	return &Service{DB: db, TasksRepo: tasksRepo}, nil
+	return &Service{DB: db, TasksRepo: tasksRepo, TagsRepo: tagsRepo}, nil
 }
 
 func (s *Service) Close() error {
@@ -48,7 +51,9 @@ func initDB(cfg *config.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("unsupported database provider: %s", cfg.DBProvider)
 	}
 
-	db, err := gorm.Open(dialector, &gorm.Config{})
+	db, err := gorm.Open(dialector, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
