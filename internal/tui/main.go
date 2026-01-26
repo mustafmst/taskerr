@@ -275,9 +275,9 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "s":
-			// Open stats modal - get all tasks (unfiltered)
-			allTasks, _ := m.service.TasksRepo.GetAllWithTags()
-			m.statsModal.Show(allTasks, m.tagsPanel.Tags())
+			// Open stats modal - get stats from database
+			stats, _ := m.service.TasksRepo.GetStats()
+			m.statsModal.Show(stats)
 			m.statsModal.SetSize(m.width, m.height)
 			return m, nil
 		case "d":

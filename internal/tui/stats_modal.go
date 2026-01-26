@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -10,12 +9,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mustafmst/taskerr/internal/data/tasks"
 )
-
-// TagStat holds tag name and task count for display
-type TagStat struct {
-	Name  string
-	Count int
-}
 
 // StatsModalModel represents the statistics modal
 type StatsModalModel struct {
@@ -37,7 +30,7 @@ type StatsModalModel struct {
 
 	// Tag statistics
 	totalTags int
-	tagStats  []TagStat // sorted by count descending
+	tagStats  []tasks.TagStat // sorted by count descending
 
 	// Activity trend (last 7 days)
 	dailyActivity [7]int
@@ -49,10 +42,32 @@ func NewStatsModalModel() StatsModalModel {
 	return StatsModalModel{}
 }
 
-// Show calculates statistics and displays the modal
-func (m *StatsModalModel) Show(allTasks []tasks.Task, tags []tasks.Tag) {
+// Show displays the modal with pre-computed statistics from the database
+func (m *StatsModalModel) Show(stats *tasks.TaskStats) {
 	m.visible = true
-	m.calculateStats(allTasks, tags)
+	m.applyStats(stats)
+}
+
+// applyStats applies the database-computed statistics to the modal
+func (m *StatsModalModel) applyStats(stats *tasks.TaskStats) {
+	m.totalTasks = int(stats.TotalTasks)
+	m.completedTasks = int(stats.CompletedTasks)
+	m.incompleteTasks = int(stats.IncompleteTasks)
+	m.completionRate = stats.CompletionRate
+
+	m.todayCompleted = int(stats.TodayCompleted)
+	m.weekCompleted = int(stats.WeekCompleted)
+	m.monthCompleted = int(stats.MonthCompleted)
+	m.avgCompletionTime = stats.AvgCompletionTime
+
+	// Copy daily activity
+	for i := 0; i < 7; i++ {
+		m.dailyActivity[i] = int(stats.DailyActivity[i])
+		m.dayLabels[i] = stats.DayLabels[i]
+	}
+
+	m.totalTags = stats.TotalTags
+	m.tagStats = stats.TagStats
 }
 
 // SetSize sets the modal dimensions
@@ -69,110 +84,6 @@ func (m StatsModalModel) IsVisible() bool {
 // Reset clears the modal state
 func (m *StatsModalModel) Reset() {
 	m.visible = false
-}
-
-// calculateStats computes all statistics from the task data
-func (m *StatsModalModel) calculateStats(allTasks []tasks.Task, tags []tasks.Tag) {
-	now := time.Now()
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	weekStart := todayStart.AddDate(0, 0, -int(now.Weekday()))
-	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-
-	m.totalTasks = len(allTasks)
-	m.completedTasks = 0
-	m.incompleteTasks = 0
-	m.todayCompleted = 0
-	m.weekCompleted = 0
-	m.monthCompleted = 0
-
-	var totalCompletionTime time.Duration
-	var completedWithTime int
-
-	// Initialize daily activity (last 7 days)
-	m.dailyActivity = [7]int{}
-	for i := 0; i < 7; i++ {
-		day := todayStart.AddDate(0, 0, -6+i)
-		m.dayLabels[i] = day.Format("Mon")[:3]
-	}
-
-	// Tag count map
-	tagCounts := make(map[uint]int)
-
-	for _, task := range allTasks {
-		// Count completed vs incomplete
-		if task.State {
-			m.completedTasks++
-
-			// Time-based counts (using FinishedAt if available)
-			finishedTime := task.UpdatedAt
-			if task.FinishedAt != nil {
-				finishedTime = *task.FinishedAt
-			}
-
-			if finishedTime.After(todayStart) || finishedTime.Equal(todayStart) {
-				m.todayCompleted++
-			}
-			if finishedTime.After(weekStart) || finishedTime.Equal(weekStart) {
-				m.weekCompleted++
-			}
-			if finishedTime.After(monthStart) || finishedTime.Equal(monthStart) {
-				m.monthCompleted++
-			}
-
-			// Average completion time
-			if task.FinishedAt != nil {
-				duration := task.FinishedAt.Sub(task.CreatedAt)
-				if duration > 0 {
-					totalCompletionTime += duration
-					completedWithTime++
-				}
-			}
-
-			// Daily activity (last 7 days)
-			for i := 0; i < 7; i++ {
-				dayStart := todayStart.AddDate(0, 0, -6+i)
-				dayEnd := dayStart.AddDate(0, 0, 1)
-				if (finishedTime.After(dayStart) || finishedTime.Equal(dayStart)) && finishedTime.Before(dayEnd) {
-					m.dailyActivity[i]++
-				}
-			}
-		} else {
-			m.incompleteTasks++
-		}
-
-		// Count tags
-		for _, tag := range task.Tags {
-			tagCounts[tag.ID]++
-		}
-	}
-
-	// Completion rate
-	if m.totalTasks > 0 {
-		m.completionRate = float64(m.completedTasks) / float64(m.totalTasks) * 100
-	} else {
-		m.completionRate = 0
-	}
-
-	// Average completion time
-	if completedWithTime > 0 {
-		m.avgCompletionTime = totalCompletionTime / time.Duration(completedWithTime)
-	} else {
-		m.avgCompletionTime = 0
-	}
-
-	// Tag statistics
-	m.totalTags = len(tags)
-	m.tagStats = make([]TagStat, 0, len(tags))
-	for _, tag := range tags {
-		m.tagStats = append(m.tagStats, TagStat{
-			Name:  tag.Name,
-			Count: tagCounts[tag.ID],
-		})
-	}
-	// Sort by count descending
-	sort.Slice(m.tagStats, func(i, j int) bool {
-		return m.tagStats[i].Count > m.tagStats[j].Count
-	})
 }
 
 // Update handles key events
@@ -247,7 +158,7 @@ func (m StatsModalModel) View() string {
 	if maxTags == 0 {
 		sections = append(sections, DimStyle.Render("No tags yet"))
 	} else {
-		maxCount := 0
+		maxCount := int64(0)
 		for i := 0; i < maxTags; i++ {
 			if m.tagStats[i].Count > maxCount {
 				maxCount = m.tagStats[i].Count
@@ -255,7 +166,7 @@ func (m StatsModalModel) View() string {
 		}
 		for i := 0; i < maxTags; i++ {
 			tag := m.tagStats[i]
-			sections = append(sections, renderTagBar(tag.Name, tag.Count, maxCount, contentWidth))
+			sections = append(sections, renderTagBar(tag.Name, int(tag.Count), int(maxCount), contentWidth))
 		}
 	}
 	sections = append(sections, "")
