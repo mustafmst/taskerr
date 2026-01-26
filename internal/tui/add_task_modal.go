@@ -34,6 +34,10 @@ type AddTaskModalModel struct {
 	selectedTags map[uint]bool
 	activeTagIdx int
 	tagScroll    int
+
+	// Edit mode
+	editMode   bool
+	editTaskID uint
 }
 
 // NewAddTaskModalModel creates a new AddTaskModalModel
@@ -73,6 +77,19 @@ func (m *AddTaskModalModel) SetTags(tags []tasks.Tag) {
 	m.tags = tags
 }
 
+// SetEditTask populates the modal with existing task data for editing
+func (m *AddTaskModalModel) SetEditTask(task *tasks.Task) {
+	m.editMode = true
+	m.editTaskID = task.ID
+	m.descInput.SetValue(task.Description)
+
+	// Pre-select task's existing tags
+	m.selectedTags = make(map[uint]bool)
+	for _, tag := range task.Tags {
+		m.selectedTags[tag.ID] = true
+	}
+}
+
 // Getters
 
 // IsVisible returns whether the modal is visible
@@ -88,6 +105,8 @@ func (m *AddTaskModalModel) Reset() {
 	m.activeTagIdx = 0
 	m.tagScroll = 0
 	m.activeField = FieldDescription
+	m.editMode = false
+	m.editTaskID = 0
 }
 
 // modalWidth returns the width of the modal
@@ -156,8 +175,24 @@ func (m AddTaskModalModel) Update(msg tea.Msg) (AddTaskModalModel, tea.Cmd) {
 				}
 			}
 
+			// Capture edit mode state before reset
+			editMode := m.editMode
+			editTaskID := m.editTaskID
+
 			m.Reset()
 			m.visible = false
+
+			if editMode {
+				return m, func() tea.Msg {
+					return TaskUpdatedMsg{
+						TaskID:      editTaskID,
+						Description: desc,
+						TagIDs:      tagIDs,
+						NewTagNames: newTagNames,
+					}
+				}
+			}
+
 			return m, func() tea.Msg {
 				return TaskCreatedMsg{
 					Description: desc,
@@ -299,11 +334,15 @@ func (m AddTaskModalModel) View() string {
 		BorderForeground(ActiveBorderColor).
 		Padding(1, 2)
 
-	// Title
+	// Title - changes based on mode
+	titleText := "Add New Task"
+	if m.editMode {
+		titleText = "Edit Task"
+	}
 	title := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(WhiteColor).
-		Render("Add New Task")
+		Render(titleText)
 
 	// Description field
 	descLabel := m.fieldLabel("Description:", m.activeField == FieldDescription)
