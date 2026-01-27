@@ -1,1 +1,4 @@
 build
+
+# Test database
+test.db*

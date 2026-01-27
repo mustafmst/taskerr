@@ -103,6 +103,34 @@ func setupTestDB(t *testing.T) *gorm.DB {
 }
 ```
 
+### Testing Full Application
+
+To test the full application without affecting your personal data, use environment variables to override the configuration:
+
+```bash
+# Use a test database in the repository
+TASKERR_DB_CONNECTION=./test.db ./build/taskerr
+
+# Or export for multiple commands
+export TASKERR_DB_CONNECTION=./test.db
+./build/taskerr add "Test task"
+./build/taskerr ls
+./build/taskerr done 1
+unset TASKERR_DB_CONNECTION
+
+# Run TUI with test database
+TASKERR_DB_CONNECTION=./test.db ./build/taskerr
+```
+
+**Environment variables:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TASKERR_DB_PROVIDER` | `sqlite` | Database driver (sqlite, mysql, postgres) |
+| `TASKERR_DB_CONNECTION` | `~/.taskerr.db` | Database path or connection string |
+
+**Note:** The `test.db` file is ignored by git. Delete it to reset test state.
+
 ### Linting (not currently configured, but recommended)
 
 ```bash
