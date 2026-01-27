@@ -35,10 +35,72 @@ go run main.go                 # Run directly
 ```bash
 go test ./...                           # Run all tests
 go test ./internal/data/tasks/...       # Run tests in specific package
-go test -v ./internal/config/...        # Verbose output for a package
+go test -v ./internal/cli/...           # Verbose output for a package
 go test -run TestFunctionName ./...     # Run a single test by name
 go test -run TestFunctionName/SubTest   # Run a specific subtest
 go test -cover ./...                    # Run with coverage
+go test -race ./...                     # Run with race detector
+```
+
+### Writing Tests
+
+Tests use [testify](https://github.com/stretchr/testify) for assertions and mocks:
+
+```go
+import (
+    "testing"
+    "github.com/stretchr/testify/assert"
+    "github.com/stretchr/testify/require"
+)
+
+func TestExample(t *testing.T) {
+    // Use require for fatal assertions (stops test on failure)
+    require.NoError(t, err)
+    require.NotNil(t, result)
+
+    // Use assert for non-fatal assertions (continues test on failure)
+    assert.Equal(t, expected, actual)
+    assert.Contains(t, slice, element)
+}
+```
+
+**Test file conventions:**
+- Test files: `*_test.go` in same package as code being tested
+- Test functions: `TestXxx(t *testing.T)`
+- Use table-driven tests for multiple scenarios:
+
+```go
+func TestFeature(t *testing.T) {
+    tests := []struct {
+        name     string
+        input    string
+        expected int
+    }{
+        {"empty input", "", 0},
+        {"single item", "a", 1},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            result := Feature(tt.input)
+            assert.Equal(t, tt.expected, result)
+        })
+    }
+}
+```
+
+**Test database setup:**
+Use in-memory SQLite for repository tests:
+
+```go
+func setupTestDB(t *testing.T) *gorm.DB {
+    db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+        Logger: logger.Default.LogMode(logger.Silent),
+    })
+    require.NoError(t, err)
+    db.AutoMigrate(&Task{}, &Tag{})
+    return db
+}
 ```
 
 ### Linting (not currently configured, but recommended)

@@ -54,6 +54,15 @@ func (r *TasksRepository) GetAllWithTags() ([]Task, error) {
 	return tasks, nil
 }
 
+// GetWithTags retrieves a task by ID with its associated tags preloaded
+func (r *TasksRepository) GetWithTags(id uint) (*Task, error) {
+	var task Task
+	if err := r.db.Preload("Tags").First(&task, id).Error; err != nil {
+		return nil, err
+	}
+	return &task, nil
+}
+
 // Update updates an existing task in the database
 func (r *TasksRepository) Update(task *Task) error {
 	return r.db.Save(task).Error

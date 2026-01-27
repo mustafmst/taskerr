@@ -17,11 +17,11 @@ These features address fundamental gaps in the application.
 
 - [ ] **Task Priorities** - Priority levels (high/medium/low) with visual indicators and sorting options.
 
-- [ ] **CLI Task Completion** - `taskerr done <id>` and `taskerr undone <id>` commands to toggle task state from CLI.
+- [x] **CLI Task Completion** - `taskerr done <id>` and `taskerr undone <id>` commands to toggle task state from CLI. (Completed: 2026-01-27)
 
-- [ ] **CLI Task Edit** - `taskerr edit <id> --desc="new desc" --tags=tag1,tag2` to modify tasks from CLI.
+- [x] **CLI Task Edit** - `taskerr edit <id> --desc="new desc" --tags=tag1,tag2` to modify tasks from CLI. (Completed: 2026-01-27)
 
-- [ ] **CLI Task Delete** - `taskerr delete <id>` or `taskerr rm <id>` to remove tasks from CLI.
+- [x] **CLI Task Delete** - `taskerr delete <id>` or `taskerr rm <id>` to remove tasks from CLI. (Completed: 2026-01-27)
 
 ---
 
@@ -123,6 +123,8 @@ Features requiring schema changes:
 
 _Move completed items here with completion date._
 
-<!-- Example:
-- [x] **Feature Name** - Description. (Completed: 2025-01-27)
--->
+- [x] **CLI Task Completion** - `taskerr done <id>` and `taskerr undone <id>` commands to toggle task state from CLI. (Completed: 2026-01-27)
+
+- [x] **CLI Task Edit** - `taskerr edit <id> --desc="new desc" --tags=tag1,tag2` to modify tasks from CLI. (Completed: 2026-01-27)
+
+- [x] **CLI Task Delete** - `taskerr delete <id>` or `taskerr rm <id>` to remove tasks from CLI. (Completed: 2026-01-27)
