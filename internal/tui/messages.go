@@ -4,6 +4,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mustafmst/taskerr/internal/data"
 	"github.com/mustafmst/taskerr/internal/data/tasks"
 )
 
@@ -26,7 +27,7 @@ type TickMsg time.Time
 
 // DBStateMsg contains the current database state for change detection
 type DBStateMsg struct {
-	State tasks.DBState
+	State data.DBState
 }
 
 // TickCmd returns a command that sends a TickMsg after one second

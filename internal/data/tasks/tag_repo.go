@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // TagsRepository handles database operations for tags
@@ -46,22 +47,24 @@ func (r *TagsRepository) GetByName(name string) (*Tag, error) {
 // GetOrCreate retrieves a tag by name or creates it with a random color from palette
 func (r *TagsRepository) GetOrCreate(name string) (*Tag, error) {
 	name = strings.ToLower(strings.TrimSpace(name))
-	var tag Tag
-	err := r.db.Where("name = ?", name).First(&tag).Error
-	if err == gorm.ErrRecordNotFound {
-		tag = Tag{
-			Name:  name,
-			Color: TagColorPalette[r.colorIndex%len(TagColorPalette)],
-		}
+	tag := Tag{
+		Name:  name,
+		Color: TagColorPalette[r.colorIndex%len(TagColorPalette)],
+	}
+	result := r.db.Clauses(clause.OnConflict{DoNothing: true}).Create(&tag)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected > 0 {
 		r.colorIndex++
-		if err := r.db.Create(&tag).Error; err != nil {
-			return nil, err
-		}
 		return &tag, nil
-	} else if err != nil {
+	}
+
+	var existing Tag
+	if err := r.db.Where("name = ?", name).First(&existing).Error; err != nil {
 		return nil, err
 	}
-	return &tag, nil
+	return &existing, nil
 }
 
 // GetAll retrieves all tags from the database
@@ -92,12 +95,16 @@ func (r *TagsRepository) DeleteByName(name string) error {
 
 // AttachToTask attaches a tag to a task
 func (r *TagsRepository) AttachToTask(tagID uint, taskID uint) error {
-	return r.db.Exec("INSERT OR IGNORE INTO task_tags (task_id, tag_id) VALUES (?, ?)", taskID, tagID).Error
+	task := Task{ID: taskID}
+	tag := Tag{ID: tagID}
+	return r.db.Model(&task).Association("Tags").Append(&tag)
 }
 
 // DetachFromTask removes a tag from a task
 func (r *TagsRepository) DetachFromTask(tagID uint, taskID uint) error {
-	return r.db.Exec("DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?", taskID, tagID).Error
+	task := Task{ID: taskID}
+	tag := Tag{ID: tagID}
+	return r.db.Model(&task).Association("Tags").Delete(&tag)
 }
 
 // GetTaskTags retrieves all tags for a specific task

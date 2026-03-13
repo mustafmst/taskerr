@@ -12,13 +12,12 @@ import (
 )
 
 func main() {
-	configProvider := config.NewConfigProvider()
-	config, err := configProvider.Get()
+	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Error initializing config provider: %v", err)
+		log.Fatalf("Error loading config: %v", err)
 	}
 
-	dataService, err := data.NewService(&config)
+	dataService, err := data.NewService(cfg)
 	if err != nil {
 		log.Fatalf("Error initializing data service: %v", err)
 	}

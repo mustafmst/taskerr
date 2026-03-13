@@ -24,7 +24,7 @@ type MainWindowModel struct {
 	height        int
 	service       *data.Service
 	hideCompleted bool
-	lastDBState   tasks.DBState
+	lastDBState   data.DBState
 
 	activePanel  Panel
 	tagsPanel    TagsPanelModel
@@ -87,12 +87,13 @@ func (m MainWindowModel) loadTags() tea.Msg {
 	return TagsLoadedMsg{Tags: tagsList}
 }
 
-// checkDBState checks the database state for changes
+// checkDBState checks the database state for changes.
 func (m MainWindowModel) checkDBState() tea.Msg {
-	state, err := m.service.TasksRepo.GetDBState()
+	state, err := m.service.GetDBState()
 	if err != nil {
 		return nil
 	}
+
 	return DBStateMsg{State: state}
 }
 
@@ -113,8 +114,7 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.checkDBState
 
 	case DBStateMsg:
-		if msg.State.Count != m.lastDBState.Count ||
-			!msg.State.LastUpdated.Equal(m.lastDBState.LastUpdated) {
+		if msg.State != m.lastDBState {
 			m.lastDBState = msg.State
 			return m, tea.Batch(m.loadTasks, m.loadTags, TickCmd())
 		}
@@ -126,72 +126,23 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case TaskToggledMsg:
 		// Update task in DB, then reload
-		m.service.TasksRepo.Update(&msg.Task)
+		if err := m.service.TasksRepo.Update(&msg.Task); err != nil {
+			log.Printf("Error updating task: %v", err)
+			return m, nil
+		}
 		return m, m.loadTasks
 
 	case TaskCreatedMsg:
-		// Create new task
-		task := tasks.Task{Description: msg.Description}
-		m.service.TasksRepo.Create(&task)
-
-		// Attach existing tags
-		for _, tagID := range msg.TagIDs {
-			m.service.TagsRepo.AttachToTask(tagID, task.ID)
+		if _, err := m.service.CreateTask(msg.Description, msg.TagIDs, msg.NewTagNames); err != nil {
+			log.Printf("Error creating task: %v", err)
+			return m, nil
 		}
-
-		// Create and attach new tags
-		for _, tagName := range msg.NewTagNames {
-			tag, err := m.service.TagsRepo.GetOrCreate(tagName)
-			if err == nil {
-				m.service.TagsRepo.AttachToTask(tag.ID, task.ID)
-			}
-		}
-
 		return m, tea.Batch(m.loadTasks, m.loadTags)
 
 	case TaskUpdatedMsg:
-		// Update existing task
-		task, err := m.service.TasksRepo.Get(msg.TaskID)
-		if err != nil {
-			return m, nil // Task not found, ignore
-		}
-
-		task.Description = msg.Description
-		m.service.TasksRepo.Update(task)
-
-		// Get current tags for this task
-		currentTags, _ := m.service.TagsRepo.GetTaskTags(msg.TaskID)
-		currentTagIDs := make(map[uint]bool)
-		for _, tag := range currentTags {
-			currentTagIDs[tag.ID] = true
-		}
-
-		// Build map of new tag IDs
-		newTagIDs := make(map[uint]bool)
-		for _, tagID := range msg.TagIDs {
-			newTagIDs[tagID] = true
-		}
-
-		// Detach tags that are no longer selected
-		for _, tag := range currentTags {
-			if !newTagIDs[tag.ID] {
-				m.service.TagsRepo.DetachFromTask(tag.ID, msg.TaskID)
-			}
-		}
-
-		// Attach newly selected tags
-		for _, tagID := range msg.TagIDs {
-			if !currentTagIDs[tagID] {
-				m.service.TagsRepo.AttachToTask(tagID, msg.TaskID)
-			}
-		}
-
-		// Create and attach new tags
-		for _, tagName := range msg.NewTagNames {
-			tag, err := m.service.TagsRepo.GetOrCreate(tagName)
-			if err == nil {
-				m.service.TagsRepo.AttachToTask(tag.ID, msg.TaskID)
-			}
+		if err := m.service.UpdateTask(msg.TaskID, msg.Description, msg.TagIDs, msg.NewTagNames); err != nil {
+			log.Printf("Error updating task: %v", err)
+			return m, nil
 		}
 
 		return m, tea.Batch(m.loadTasks, m.loadTags)
@@ -203,10 +154,16 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case DeleteConfirmedMsg:
 		// Handle deletion based on item type
 		if msg.ItemType == "task" {
-			m.service.TasksRepo.Delete(msg.ItemID)
+			if err := m.service.DeleteTask(msg.ItemID); err != nil {
+				log.Printf("Error deleting task: %v", err)
+				return m, nil
+			}
 			return m, m.loadTasks
 		} else if msg.ItemType == "tag" {
-			m.service.TagsRepo.Delete(msg.ItemID)
+			if err := m.service.DeleteTag(msg.ItemID); err != nil {
+				log.Printf("Error deleting tag: %v", err)
+				return m, nil
+			}
 			return m, tea.Batch(m.loadTasks, m.loadTags)
 		}
 		return m, nil
