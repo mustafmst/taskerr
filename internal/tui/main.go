@@ -133,14 +133,14 @@ func (m MainWindowModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.loadTasks
 
 	case TaskCreatedMsg:
-		if _, err := m.service.CreateTask(msg.Description, msg.TagIDs, msg.NewTagNames); err != nil {
+		if _, err := m.service.CreateTask(msg.Description, msg.Details, msg.TagIDs, msg.NewTagNames); err != nil {
 			log.Printf("Error creating task: %v", err)
 			return m, nil
 		}
 		return m, tea.Batch(m.loadTasks, m.loadTags)
 
 	case TaskUpdatedMsg:
-		if err := m.service.UpdateTask(msg.TaskID, msg.Description, msg.TagIDs, msg.NewTagNames); err != nil {
+		if err := m.service.UpdateTask(msg.TaskID, msg.Description, msg.Details, msg.TagIDs, msg.NewTagNames); err != nil {
 			log.Printf("Error updating task: %v", err)
 			return m, nil
 		}
@@ -374,7 +374,7 @@ func (m MainWindowModel) renderFooter() string {
 		hiddenStatus = "show"
 	}
 
-	footer := fmt.Sprintf(" [Navigate] TAB j/k │ [Edit] n:new e:edit d:del SPACE:toggle │ [View] m:filter(%s) h:%s s:stats │ q:quit",
+	footer := fmt.Sprintf(" [Navigate] TAB j/k │ [Edit] n:new e:edit d:del a:all SPACE:toggle │ [View] m:filter(%s) h:%s s:stats │ q:quit",
 		m.tagsPanel.GetFilterMode().String(), hiddenStatus)
 
 	return footerStyle.Render(footer)

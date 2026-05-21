@@ -20,9 +20,12 @@ func TestCreateAndUpdateTaskCentralizesTagManagement(t *testing.T) {
 		t.Fatalf("GetOrCreate(work) error = %v", err)
 	}
 
-	task, err := service.CreateTask("ship release", []uint{workTag.ID}, []string{"urgent"})
+	task, err := service.CreateTask("ship release", "document the rollout", []uint{workTag.ID}, []string{"urgent"})
 	if err != nil {
 		t.Fatalf("CreateTask() error = %v", err)
+	}
+	if task.Details != "document the rollout" {
+		t.Fatalf("Details = %q, want details to persist", task.Details)
 	}
 
 	taskTags, err := service.TagsRepo.GetTaskTags(task.ID)
@@ -38,7 +41,7 @@ func TestCreateAndUpdateTaskCentralizesTagManagement(t *testing.T) {
 		t.Fatalf("GetOrCreate(personal) error = %v", err)
 	}
 
-	if err := service.UpdateTask(task.ID, "ship release notes", []uint{personalTag.ID}, nil); err != nil {
+	if err := service.UpdateTask(task.ID, "ship release notes", "write changelog and email", []uint{personalTag.ID}, nil); err != nil {
 		t.Fatalf("UpdateTask() error = %v", err)
 	}
 
@@ -48,6 +51,9 @@ func TestCreateAndUpdateTaskCentralizesTagManagement(t *testing.T) {
 	}
 	if updatedTask.Description != "ship release notes" {
 		t.Fatalf("Description = %q, want updated value", updatedTask.Description)
+	}
+	if updatedTask.Details != "write changelog and email" {
+		t.Fatalf("Details = %q, want updated value", updatedTask.Details)
 	}
 
 	taskTags, err = service.TagsRepo.GetTaskTags(task.ID)
@@ -71,7 +77,7 @@ func TestAttachAndDetachTagToTask(t *testing.T) {
 		t.Fatalf("NewService() error = %v", err)
 	}
 
-	task, err := service.CreateTask("review code", nil, nil)
+	task, err := service.CreateTask("review code", "", nil, nil)
 	if err != nil {
 		t.Fatalf("CreateTask() error = %v", err)
 	}

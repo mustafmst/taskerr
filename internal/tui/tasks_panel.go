@@ -16,12 +16,14 @@ type TasksPanelModel struct {
 	width        int
 	height       int
 	focused      bool
+	expandedTask int
 }
 
 // NewTasksPanelModel creates a new TasksPanelModel
 func NewTasksPanelModel() TasksPanelModel {
 	return TasksPanelModel{
-		activeTask: -1,
+		activeTask:   -1,
+		expandedTask: -1,
 	}
 }
 
@@ -46,6 +48,7 @@ func (m *TasksPanelModel) SetTasks(tasksList []tasks.Task) {
 		m.activeTask = 0
 	}
 	m.fixActiveTask()
+	m.expandedTask = -1
 	m.adjustScroll()
 }
 
@@ -76,12 +79,23 @@ func (m TasksPanelModel) Update(msg tea.Msg) (TasksPanelModel, tea.Cmd) {
 		switch msg.String() {
 		case "j", "down":
 			m.activeTask++
+			m.expandedTask = -1
 			m.fixActiveTask()
 			m.adjustScroll()
 		case "k", "up":
 			m.activeTask--
+			m.expandedTask = -1
 			m.fixActiveTask()
 			m.adjustScroll()
+		case "a":
+			if m.activeTask >= 0 && m.activeTask < len(m.tasks) {
+				if m.expandedTask == m.activeTask {
+					m.expandedTask = -1
+				} else {
+					m.expandedTask = m.activeTask
+				}
+				m.adjustScroll()
+			}
 		case " ", "enter": // Space or Enter - toggle task
 			if m.activeTask >= 0 && m.activeTask < len(m.tasks) {
 				task := m.tasks[m.activeTask]
@@ -118,7 +132,8 @@ func (m TasksPanelModel) View() string {
 
 		for i := startIdx; i < endIdx; i++ {
 			active := i == m.activeTask && m.focused
-			taskView := NewTaskModel(m.tasks[i], taskCardWidth, active).View()
+			expanded := i == m.expandedTask
+			taskView := NewTaskModel(m.tasks[i], taskCardWidth, active, expanded).View()
 			lines = append(lines, taskView)
 		}
 	}
@@ -169,7 +184,7 @@ func (m TasksPanelModel) calculateVisibleRange() (startIdx, endIdx int) {
 	usedHeight := 0
 
 	for i := startIdx; i < len(m.tasks); i++ {
-		taskHeight := NewTaskModel(m.tasks[i], taskCardWidth, false).Height()
+		taskHeight := NewTaskModel(m.tasks[i], taskCardWidth, false, i == m.expandedTask).Height()
 		if usedHeight+taskHeight > availableHeight && i > startIdx {
 			break // Don't add this task, but ensure at least 1 is shown
 		}

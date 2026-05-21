@@ -75,9 +75,10 @@ func (s *Service) GetDBState() (DBState, error) {
 }
 
 // CreateTask creates a task and attaches both existing and new tags.
-func (s *Service) CreateTask(description string, tagIDs []uint, newTagNames []string) (*tasks.Task, error) {
+func (s *Service) CreateTask(description, details string, tagIDs []uint, newTagNames []string) (*tasks.Task, error) {
 	task := &tasks.Task{
 		Description: strings.TrimSpace(description),
+		Details:     strings.TrimSpace(details),
 		State:       false,
 	}
 	if err := s.TasksRepo.Create(task); err != nil {
@@ -91,14 +92,15 @@ func (s *Service) CreateTask(description string, tagIDs []uint, newTagNames []st
 	return s.TasksRepo.Get(task.ID)
 }
 
-// UpdateTask updates a task description and fully replaces its tag set.
-func (s *Service) UpdateTask(taskID uint, description string, tagIDs []uint, newTagNames []string) error {
+// UpdateTask updates a task description/details and fully replaces its tag set.
+func (s *Service) UpdateTask(taskID uint, description, details string, tagIDs []uint, newTagNames []string) error {
 	task, err := s.TasksRepo.Get(taskID)
 	if err != nil {
 		return err
 	}
 
 	task.Description = strings.TrimSpace(description)
+	task.Details = strings.TrimSpace(details)
 	if err := s.TasksRepo.Update(task); err != nil {
 		return err
 	}

@@ -60,6 +60,7 @@ type FilterModeChangedMsg struct {
 // TaskCreatedMsg is sent when a new task is created via the modal
 type TaskCreatedMsg struct {
 	Description string
+	Details     string
 	TagIDs      []uint
 	NewTagNames []string
 }
@@ -68,6 +69,7 @@ type TaskCreatedMsg struct {
 type TaskUpdatedMsg struct {
 	TaskID      uint
 	Description string
+	Details     string
 	TagIDs      []uint
 	NewTagNames []string
 }

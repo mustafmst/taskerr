@@ -48,8 +48,9 @@ func newAddCommand(dataService *data.Service) *cobra.Command {
 			}
 
 			description := strings.Join(args, " ")
+			details, _ := cmd.Flags().GetString("details")
 			tagNames := parseCommaSeparated(cmd, "tags")
-			task, err := dataService.CreateTask(description, nil, tagNames)
+			task, err := dataService.CreateTask(description, details, nil, tagNames)
 			if err != nil {
 				log.Fatalf("Error creating task: %v", err)
 			}
@@ -58,6 +59,7 @@ func newAddCommand(dataService *data.Service) *cobra.Command {
 		},
 	}
 
+	addCmd.Flags().String("details", "", "Longer task description")
 	addCmd.Flags().String("tags", "", "Comma-separated list of tags (e.g., --tags=work,urgent)")
 	return addCmd
 }

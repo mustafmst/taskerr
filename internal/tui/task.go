@@ -7,14 +7,15 @@ import (
 
 // TaskModel represents a single task card in the TUI
 type TaskModel struct {
-	task   tasks.Task
-	width  int
-	active bool
+	task     tasks.Task
+	width    int
+	active   bool
+	expanded bool
 }
 
 // NewTaskModel creates a new TaskModel
-func NewTaskModel(task tasks.Task, width int, active bool) TaskModel {
-	return TaskModel{task: task, width: width, active: active}
+func NewTaskModel(task tasks.Task, width int, active bool, expanded bool) TaskModel {
+	return TaskModel{task: task, width: width, active: active, expanded: expanded}
 }
 
 // Height returns the rendered height of the task card in lines
@@ -29,13 +30,19 @@ func (model TaskModel) Height() int {
 		descLines = 2
 	}
 
+	detailsLines := 0
+	if model.expanded && model.task.Details != "" {
+		details := truncateToLines(model.task.Details, maxDescWidth, 6)
+		detailsLines = countWrappedLines(details, maxDescWidth) + 1
+	}
+
 	// Tags: always 1 line (with [...] overflow indicator)
 	tagsLine := 1
 
 	// Border: 2 lines (top + bottom)
 	border := 2
 
-	return descLines + tagsLine + border
+	return descLines + detailsLines + tagsLine + border
 }
 
 // View renders the task card
@@ -53,6 +60,15 @@ func (model TaskModel) View() string {
 
 	// Truncate description to max 2 lines
 	desc := truncateToLines(model.task.Description, maxDescWidth, 2)
+	contentParts := []string{desc}
+
+	if model.expanded && model.task.Details != "" {
+		details := truncateToLines(model.task.Details, maxDescWidth, 6)
+		detailsText := lipgloss.NewStyle().
+			Foreground(WhiteColor).
+			Render(details)
+		contentParts = append(contentParts, detailsText)
+	}
 
 	// Build tag badges with overflow handling
 	tagStr := model.buildTagsLine(maxDescWidth)
@@ -62,7 +78,7 @@ func (model TaskModel) View() string {
 		Width(contentWidth - 2). // Account for border padding
 		Align(lipgloss.Right)
 
-	content := desc
+	content := lipgloss.JoinVertical(lipgloss.Left, contentParts...)
 	if tagStr != "" {
 		content += "\n" + tagsLineStyle.Render(tagStr)
 	} else {
@@ -83,6 +99,9 @@ func (model TaskModel) View() string {
 // buildTagsLine builds the tags string, adding [...] if they overflow
 func (model TaskModel) buildTagsLine(maxWidth int) string {
 	if len(model.task.Tags) == 0 {
+		if model.task.Details != "" && !model.expanded {
+			return DimStyle.Render("[details]")
+		}
 		return ""
 	}
 
@@ -123,6 +142,13 @@ func (model TaskModel) buildTagsLine(maxWidth int) string {
 		}
 
 		result += separator + rendered
+	}
+
+	if model.task.Details != "" && !model.expanded {
+		if result != "" {
+			result += " "
+		}
+		result += DimStyle.Render("[details]")
 	}
 
 	return result

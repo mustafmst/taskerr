@@ -14,6 +14,7 @@ type ModalField int
 
 const (
 	FieldDescription ModalField = iota
+	FieldDetails
 	FieldTags
 	FieldNewTags
 )
@@ -26,8 +27,9 @@ type AddTaskModalModel struct {
 	activeField ModalField
 
 	// Fields
-	descInput   TextInputModel
-	newTagInput TextInputModel
+	descInput    TextInputModel
+	detailsInput TextInputModel
+	newTagInput  TextInputModel
 
 	// Tags selection
 	tags         []tasks.Tag
@@ -43,7 +45,8 @@ type AddTaskModalModel struct {
 // NewAddTaskModalModel creates a new AddTaskModalModel
 func NewAddTaskModalModel() AddTaskModalModel {
 	return AddTaskModalModel{
-		descInput:    NewTextInputModel("Task description..."),
+		descInput:    NewTextInputModel("Task title..."),
+		detailsInput: NewTextInputModel("Task details..."),
 		newTagInput:  NewTextInputModel("New tags (comma-separated)..."),
 		selectedTags: make(map[uint]bool),
 	}
@@ -57,6 +60,7 @@ func (m *AddTaskModalModel) SetVisible(visible bool) {
 	if visible {
 		m.activeField = FieldDescription
 		m.descInput.SetFocused(true)
+		m.detailsInput.SetFocused(false)
 		m.newTagInput.SetFocused(false)
 	}
 }
@@ -69,6 +73,7 @@ func (m *AddTaskModalModel) SetSize(width, height int) {
 	modalWidth := m.modalWidth()
 	inputWidth := modalWidth - 10
 	m.descInput.SetWidth(inputWidth)
+	m.detailsInput.SetWidth(inputWidth)
 	m.newTagInput.SetWidth(inputWidth)
 }
 
@@ -82,6 +87,7 @@ func (m *AddTaskModalModel) SetEditTask(task *tasks.Task) {
 	m.editMode = true
 	m.editTaskID = task.ID
 	m.descInput.SetValue(task.Description)
+	m.detailsInput.SetValue(task.Details)
 
 	// Pre-select task's existing tags
 	m.selectedTags = make(map[uint]bool)
@@ -100,6 +106,7 @@ func (m AddTaskModalModel) IsVisible() bool {
 // Reset clears the modal state
 func (m *AddTaskModalModel) Reset() {
 	m.descInput.Reset()
+	m.detailsInput.Reset()
 	m.newTagInput.Reset()
 	m.selectedTags = make(map[uint]bool)
 	m.activeTagIdx = 0
@@ -148,11 +155,17 @@ func (m AddTaskModalModel) Update(msg tea.Msg) (AddTaskModalModel, tea.Cmd) {
 			return m, func() tea.Msg { return ModalClosedMsg{} }
 
 		case "enter":
+			if m.activeField == FieldDescription || m.activeField == FieldDetails {
+				m.nextField()
+				return m, nil
+			}
+
 			// Save task if description is not empty
 			desc := strings.TrimSpace(m.descInput.Value())
 			if desc == "" {
 				return m, nil
 			}
+			details := strings.TrimSpace(m.detailsInput.Value())
 
 			// Collect selected tag IDs
 			var tagIDs []uint
@@ -187,6 +200,7 @@ func (m AddTaskModalModel) Update(msg tea.Msg) (AddTaskModalModel, tea.Cmd) {
 					return TaskUpdatedMsg{
 						TaskID:      editTaskID,
 						Description: desc,
+						Details:     details,
 						TagIDs:      tagIDs,
 						NewTagNames: newTagNames,
 					}
@@ -196,6 +210,7 @@ func (m AddTaskModalModel) Update(msg tea.Msg) (AddTaskModalModel, tea.Cmd) {
 			return m, func() tea.Msg {
 				return TaskCreatedMsg{
 					Description: desc,
+					Details:     details,
 					TagIDs:      tagIDs,
 					NewTagNames: newTagNames,
 				}
@@ -217,6 +232,11 @@ func (m AddTaskModalModel) Update(msg tea.Msg) (AddTaskModalModel, tea.Cmd) {
 				m.descInput, cmd = m.descInput.Update(msg)
 				return m, cmd
 
+			case FieldDetails:
+				var cmd tea.Cmd
+				m.detailsInput, cmd = m.detailsInput.Update(msg)
+				return m, cmd
+
 			case FieldTags:
 				m.handleTagsInput(msg)
 				return m, nil
@@ -235,10 +255,14 @@ func (m AddTaskModalModel) Update(msg tea.Msg) (AddTaskModalModel, tea.Cmd) {
 // nextField moves to the next field
 func (m *AddTaskModalModel) nextField() {
 	m.descInput.SetFocused(false)
+	m.detailsInput.SetFocused(false)
 	m.newTagInput.SetFocused(false)
 
 	switch m.activeField {
 	case FieldDescription:
+		m.activeField = FieldDetails
+		m.detailsInput.SetFocused(true)
+	case FieldDetails:
 		m.activeField = FieldTags
 	case FieldTags:
 		m.activeField = FieldNewTags
@@ -252,15 +276,19 @@ func (m *AddTaskModalModel) nextField() {
 // prevField moves to the previous field
 func (m *AddTaskModalModel) prevField() {
 	m.descInput.SetFocused(false)
+	m.detailsInput.SetFocused(false)
 	m.newTagInput.SetFocused(false)
 
 	switch m.activeField {
 	case FieldDescription:
 		m.activeField = FieldNewTags
 		m.newTagInput.SetFocused(true)
-	case FieldTags:
+	case FieldDetails:
 		m.activeField = FieldDescription
 		m.descInput.SetFocused(true)
+	case FieldTags:
+		m.activeField = FieldDetails
+		m.detailsInput.SetFocused(true)
 	case FieldNewTags:
 		m.activeField = FieldTags
 	}
@@ -310,7 +338,7 @@ func (m *AddTaskModalModel) adjustTagScroll() {
 // visibleTagCount returns how many tags can be displayed
 func (m AddTaskModalModel) visibleTagCount() int {
 	// Reserve space for header, inputs, labels, and padding
-	available := m.modalHeight() - 12
+	available := m.modalHeight() - 15
 	if available < 3 {
 		available = 3
 	}
@@ -344,9 +372,13 @@ func (m AddTaskModalModel) View() string {
 		Foreground(WhiteColor).
 		Render(titleText)
 
-	// Description field
-	descLabel := m.fieldLabel("Description:", m.activeField == FieldDescription)
+	// Title field
+	descLabel := m.fieldLabel("Title:", m.activeField == FieldDescription)
 	descInput := m.descInput.View()
+
+	// Details field
+	detailsLabel := m.fieldLabel("Details:", m.activeField == FieldDetails)
+	detailsInput := m.detailsInput.View()
 
 	// Tags field
 	tagsLabel := m.fieldLabel("Tags:", m.activeField == FieldTags)
@@ -359,7 +391,7 @@ func (m AddTaskModalModel) View() string {
 	// Help
 	help := lipgloss.NewStyle().
 		Foreground(DimTextColor).
-		Render("TAB: next field | SPACE: toggle tag | Enter: save | Esc: cancel")
+		Render("TAB: next field | SPACE: toggle tag | Enter: next/save | Esc: cancel")
 
 	// Compose modal content
 	content := lipgloss.JoinVertical(lipgloss.Left,
@@ -367,6 +399,9 @@ func (m AddTaskModalModel) View() string {
 		"",
 		descLabel,
 		descInput,
+		"",
+		detailsLabel,
+		detailsInput,
 		"",
 		tagsLabel,
 		tagsView,

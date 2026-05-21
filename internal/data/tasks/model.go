@@ -7,6 +7,7 @@ import (
 type Task struct {
 	ID          uint       `gorm:"primaryKey" json:"id"`
 	Description string     `gorm:"not null" json:"description"`
+	Details     string     `json:"details"`
 	State       bool       `gorm:"not null" json:"state"` // true for completed, false for not completed
 	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
@@ -45,4 +46,8 @@ func (t *Task) SetFinishedAt(finishedAt time.Time) {
 
 func (t *Task) UpdateDescription(description string) {
 	t.Description = description
+}
+
+func (t *Task) UpdateDetails(details string) {
+	t.Details = details
 }
