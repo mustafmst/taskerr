@@ -1,0 +1,3 @@
+[submodule "landingpage/themes/risotto"]
+	path = landingpage/themes/risotto
+	url = https://github.com/joeroe/risotto

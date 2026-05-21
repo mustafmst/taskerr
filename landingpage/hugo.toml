@@ -1,0 +1,7 @@
+baseURL = 'https://taskerr.mstowski.pl'
+locale = 'en-us'
+title = 'Make task management simple without leaving terminal'
+theme = 'risotto'
+
+[params.theme]
+palette = 'tokyo-night-dark'
