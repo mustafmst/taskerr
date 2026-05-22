@@ -2,6 +2,16 @@ baseURL = 'https://taskerr.mstowski.pl'
 locale = 'en-us'
 title = 'Make task management simple without leaving terminal'
 theme = 'risotto'
+# Automatically add content sections to main menu
+sectionPagesMenu = "main"
 
 [params.theme]
 palette = 'tokyo-night-dark'
+
+[menu]
+
+[[menu.main]]
+identifier = "install"
+name = "Install"
+url = "/install/"
+weight = 10
